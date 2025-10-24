@@ -1,0 +1,14 @@
+{
+  "name": "Game of Life",
+  "short_name": "LifeQuest",
+  "start_url": "Game_of_Life_v3.5.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#001a66",
+  "theme_color": "#001a66",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "assets/avatar_1.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/avatar_2.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
