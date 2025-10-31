@@ -1,10 +1,10 @@
 /* ===== Service Worker for LifeQuest PWA ===== */
-const CACHE_VERSION = "life-cache-v4"; // bump this when you ship new updates
+const CACHE_VERSION = "life-cache-v5"; // bump this when you ship new updates
 const PRECACHE = [
-  "Game_of_Life_v3.5.html",
+  "index.html",
   "manifest.json",
-  "assets/avatar_1.png",
-  "assets/avatar_2.png"
+  "service-worker.js",
+  "daily_log.html"
 ];
 
 // --- Install: pre-cache core assets ---
@@ -48,4 +48,5 @@ self.addEventListener("message", async (event) => {
     await self.skipWaiting();
   }
 });
+
 
