@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>LevelUp Quest — Daily Log</title>
+<style>
+body{background:#001a66;color:#55ffff;font-family:"Courier New",monospace;padding:20px}
+a{color:#ffff55}
+table{border-collapse:collapse;width:100%;margin-top:16px}
+th,td{border:1px solid #55ffff;padding:6px;text-align:left}
+th{background:#0b2a7a}
+</style>
+</head>
+<body>
+<h1>📘 Daily Log</h1>
+<p><a href="Game_Of_Life_v3.0.html">⬅ Back to Game</a></p>
+<table id="logTable">
+  <thead><tr><th>Date</th><th>Completed Quests</th><th>XP</th><th>GP</th></tr></thead>
+  <tbody></tbody>
+</table>
+<script>
+const data=JSON.parse(localStorage.getItem("levelupQuest_v30")||"{}");
+const log=Array.isArray(data.dailyLog)?data.dailyLog:[];
+const tbody=document.querySelector("#logTable tbody");
+log.slice().reverse().forEach(day=>{
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td>${day.date}</td><td>${(day.completed||[]).join(", ")}</td><td>${day.xp||0}</td><td>${day.gp||0}</td>`;
+  tbody.appendChild(tr);
+});
+</script>
+</body>
+</html>
