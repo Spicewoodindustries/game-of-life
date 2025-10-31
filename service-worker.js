@@ -1,5 +1,5 @@
 /* ===== Service Worker for LifeQuest PWA ===== */
-const CACHE_VERSION = "life-cache-v3"; // bump this when you ship new updates
+const CACHE_VERSION = "life-cache-v4"; // bump this when you ship new updates
 const PRECACHE = [
   "Game_of_Life_v3.5.html",
   "manifest.json",
@@ -48,3 +48,4 @@ self.addEventListener("message", async (event) => {
     await self.skipWaiting();
   }
 });
+
