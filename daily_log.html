@@ -19,7 +19,8 @@ th{background:#0b2a7a}
   <tbody></tbody>
 </table>
 <script>
-const data=JSON.parse(localStorage.getItem("levelupQuest_v30")||"{}");
+// Unified save key for v3.5+
+const data = JSON.parse(localStorage.getItem("levelupQuest_profiles") || "{}");
 const log=Array.isArray(data.dailyLog)?data.dailyLog:[];
 const tbody=document.querySelector("#logTable tbody");
 log.slice().reverse().forEach(day=>{
