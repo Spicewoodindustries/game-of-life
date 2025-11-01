@@ -1,5 +1,5 @@
 /* ===== Service Worker for LifeQuest PWA ===== */
-const CACHE_VERSION = "life-cache-v5"; // bump this when you ship new updates
+const CACHE_VERSION = "life-cache-v7"; // bump this when you ship new updates
 const PRECACHE = [
   "index.html",
   "manifest.json",
@@ -48,5 +48,6 @@ self.addEventListener("message", async (event) => {
     await self.skipWaiting();
   }
 });
+
 
 
