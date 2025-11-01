@@ -256,6 +256,13 @@ canvas#avatar{background:#000c2e;border:1px solid var(--fg)}
 /* ===== constants & helpers ===== */
 const LEGACY_KEY="levelupQuest_v30";
 const PROFILES_KEY="levelupQuest_profiles";
+  // --- MIGRATION BRIDGE (old save → new profile system) ---
+const legacyData = localStorage.getItem(LEGACY_KEY);
+if (legacyData && !localStorage.getItem(PROFILES_KEY)) {
+  console.log("Migrating old LevelUp Quest save...");
+  localStorage.setItem(PROFILES_KEY, legacyData);
+}
+// --- END MIGRATION BRIDGE ---
 const MAX_LEVEL=10;
 const baseXpNeeded=300; // pacing
 const DEFAULT_HABIT_XP=12, DEFAULT_HABIT_GP=6;
@@ -793,3 +800,4 @@ function renderAll(){ renderQuests(); renderShop(); renderUpgrades(); updateUI()
 </body>
 </html>
 ```
+
