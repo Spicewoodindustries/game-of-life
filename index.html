@@ -481,8 +481,12 @@ function populateProfileSelect(){
   Object.keys(PROFILES.profiles).forEach(n=>{const opt=document.createElement("option"); opt.value=n; opt.textContent=n; selProfile.appendChild(opt);});
   if(ACTIVE) selProfile.value=ACTIVE;
 }
-function saveActiveProfile(){ if(!ACTIVE) return; PROFILES.profiles[ACTIVE]=player; setProfilesStore(PROFILES); }
-
+function saveActiveProfile() {
+  if (!ACTIVE) return;
+  // Deep clone ensures all quest states (done:true/false) are saved correctly
+  PROFILES.profiles[ACTIVE] = JSON.parse(JSON.stringify(player));
+  localStorage.setItem(PROFILES_KEY, JSON.stringify(PROFILES));
+}
 function ensureActiveProfile(){
   if(ACTIVE) return true;
   openModal("Create Profile", `<label>Profile name</label><input id="inpProfileName" type="text" value="Adventurer_1" style="width:100%">`, ()=>{
@@ -743,5 +747,6 @@ function renderAll(){ renderQuests(); renderShop(); renderUpgrades(); updateUI()
 </body>
 </html>
 ```
+
 
 
