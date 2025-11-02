@@ -255,19 +255,19 @@ function defaultPlayer(){
     settings:{soundMuted:true}
   };
 }
-function hydrate(base, data){
-  const p = Object.assign({}, base, data || {});
+function hydrate(base, data = {}) {
+  // Start from a deep clone of data (player save)
+  const p = JSON.parse(JSON.stringify(data));
+
+  // Fill in any missing nested objects from defaults
   p.meta = Object.assign({}, base.meta, p.meta || {});
   p.shop = Object.assign({}, base.shop, p.shop || {});
   p.settings = Object.assign({}, base.settings, p.settings || {});
   p.world = Object.assign({}, base.world, p.world || {});
   p.upgrades = Object.assign({}, base.upgrades, p.upgrades || {});
 
-  // Preserve quests correctly
-  if (Array.isArray(data?.quests)) {
-    // keep user's quest progress (done:true, xp/gp values)
-    p.quests = data.quests.map(q => ({ ...q }));
-  } else {
+  // ✅ Preserve quests from saved data exactly
+  if (!Array.isArray(p.quests) || p.quests.length === 0) {
     p.quests = base.quests.slice();
   }
 
@@ -277,6 +277,8 @@ function hydrate(base, data){
   if (typeof p.worldStage !== "number") p.worldStage = p.ascensions;
 
   return p;
+}
+
 }
 function getProfilesStore(){
   const raw=localStorage.getItem(PROFILES_KEY);
@@ -756,6 +758,7 @@ function renderAll(){ renderQuests(); renderShop(); renderUpgrades(); updateUI()
 </body>
 </html>
 ```
+
 
 
 
