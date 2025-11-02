@@ -15,6 +15,7 @@ a { color:#ffff55; text-decoration:none; }
 table { border-collapse:collapse; width:100%; margin-top:10px; }
 th, td { border:1px solid #55ffff; padding:6px 8px; text-align:left; }
 th { background:#0b2a7a; }
+tr.highlight td { background:#16204f; }
 </style>
 </head>
 <body>
@@ -37,18 +38,20 @@ if (!store.activeProfile || !store.profiles || !store.profiles[store.activeProfi
   if (!Array.isArray(log) || log.length === 0) {
     container.innerHTML = "<p>No daily entries yet. Complete a day to see it here.</p>";
   } else {
+    const today = new Date().toISOString().split("T")[0];
     let html = `
       <table>
         <tr><th>Date</th><th>Completed</th><th>XP</th><th>GP</th><th>Event</th></tr>
     `;
     log.slice().reverse().forEach(entry => {
+      const isToday = entry.date.includes(today);
       html += `
-        <tr>
+        <tr class="${isToday ? 'highlight' : ''}">
           <td>${entry.date}</td>
           <td>${(entry.completed && entry.completed.length ? entry.completed.join(", ") : "—")}</td>
-          <td>${entry.xp}</td>
-          <td>${entry.gp}</td>
-          <td>${entry.event || "—"}</td>
+          <td>${entry.xp ?? "—"}</td>
+          <td>${entry.gp ?? "—"}</td>
+          <td>${entry.event ?? "—"}</td>
         </tr>
       `;
     });
@@ -59,4 +62,5 @@ if (!store.activeProfile || !store.profiles || !store.profiles[store.activeProfi
 </script>
 </body>
 </html>
+
 
