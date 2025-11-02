@@ -1,64 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LevelUp Quest — Daily Log</title>
 <style>
-body{background:#001a66;color:#55ffff;font-family:"Courier New",monospace;padding:20px}
-a{color:#ffff55}
-table{border-collapse:collapse;width:100%;margin-top:16px}
-th,td{border:1px solid #55ffff;padding:6px;text-align:left}
-th{background:#0b2a7a}
+body {
+  background:#001a66;
+  color:#55ffff;
+  font-family:"Courier New", monospace;
+  padding:20px;
+}
+a { color:#ffff55; text-decoration:none; }
+table { border-collapse:collapse; width:100%; margin-top:10px; }
+th, td { border:1px solid #55ffff; padding:6px 8px; text-align:left; }
+th { background:#0b2a7a; }
 </style>
 </head>
 <body>
 <h1>📘 Daily Log</h1>
 <p><a href="index.html">⬅ Back to Game</a></p>
-<table id="logTable">
-  <thead><tr><th>Date</th><th>Completed Quests</th><th>XP</th><th>GP</th></tr></thead>
-  <tbody></tbody>
-</table>
+<div id="logContainer">Loading log...</div>
+
 <script>
 const PROFILES_KEY = "levelupQuest_profiles";
 const store = JSON.parse(localStorage.getItem(PROFILES_KEY) || "{}");
 
-if (!store.activeProfile) {
-  document.body.innerHTML = "<h2>No saved profile found.</h2><p>Play the game first, then come back.</p>";
+const container = document.getElementById("logContainer");
+
+if (!store.activeProfile || !store.profiles || !store.profiles[store.activeProfile]) {
+  container.innerHTML = "<p>No saved profile found. Play the game first, then come back.</p>";
 } else {
   const player = store.profiles[store.activeProfile];
   const log = player.dailyLog || [];
 
-  document.body.innerHTML = `
-    <div class="wrap">
-      <h1>📘 Daily Log — ${store.activeProfile}</h1>
-      <a href="index.html" style="color:#ffff55;">⬅ Back to Game</a>
-      <hr style="margin:10px 0;">
-      ${
-        log.length === 0
-          ? "<p>No daily entries yet.</p>"
-          : `
-            <table border="1" cellpadding="6" style="border-collapse:collapse;width:100%;color:#55ffff;background:#001043;">
-              <tr><th>Date</th><th>Completed</th><th>XP</th><th>GP</th><th>Event</th></tr>
-              ${log
-                .slice()
-                .reverse()
-                .map(e => `
-                  <tr>
-                    <td>${e.date}</td>
-                    <td>${(e.completed && e.completed.length ? e.completed.join(", ") : "—")}</td>
-                    <td>${e.xp}</td>
-                    <td>${e.gp}</td>
-                    <td>${e.event || "—"}</td>
-                  </tr>
-                `)
-                .join("")}
-            </table>
-          `
-      }
-    </div>
-  `;
+  if (!Array.isArray(log) || log.length === 0) {
+    container.innerHTML = "<p>No daily entries yet. Complete a day to see it here.</p>";
+  } else {
+    let html = `
+      <table>
+        <tr><th>Date</th><th>Completed</th><th>XP</th><th>GP</th><th>Event</th></tr>
+    `;
+    log.slice().reverse().forEach(entry => {
+      html += `
+        <tr>
+          <td>${entry.date}</td>
+          <td>${(entry.completed && entry.completed.length ? entry.completed.join(", ") : "—")}</td>
+          <td>${entry.xp}</td>
+          <td>${entry.gp}</td>
+          <td>${entry.event || "—"}</td>
+        </tr>
+      `;
+    });
+    html += "</table>";
+    container.innerHTML = html;
+  }
 }
 </script>
-
 </body>
 </html>
+
