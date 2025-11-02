@@ -292,14 +292,12 @@ function getProfilesStore(){
 }
 function setProfilesStore(s){ localStorage.setItem(PROFILES_KEY, JSON.stringify(s)); }
 
-window.PROFILES = getProfilesStore();
-window.ACTIVE =
-  PROFILES.activeProfile && PROFILES.profiles[PROFILES.activeProfile]
-    ? PROFILES.activeProfile
-    : null;
-window.player = ACTIVE
-  ? hydrate(defaultPlayer(), PROFILES.profiles[ACTIVE])
-  : defaultPlayer();
+let PROFILES = getProfilesStore();
+let ACTIVE = PROFILES.activeProfile && PROFILES.profiles[PROFILES.activeProfile]
+  ? PROFILES.activeProfile
+  : null;
+let player = ACTIVE ? hydrate(defaultPlayer(), PROFILES.profiles[ACTIVE]) : defaultPlayer();
+
 
 /* ===== modal helpers ===== */
 const modal=document.getElementById('modal'), modalTitle=document.getElementById('modalTitle'), modalBody=document.getElementById('modalBody');
@@ -763,6 +761,7 @@ function renderAll(){ renderQuests(); renderShop(); renderUpgrades(); updateUI()
 </body>
 </html>
 ```
+
 
 
 
