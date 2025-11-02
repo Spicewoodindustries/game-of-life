@@ -262,7 +262,7 @@ function hydrate(base, data){
   p.settings=Object.assign({}, base.settings, p.settings||{});
   p.world=Object.assign({}, base.world, p.world||{});
   p.upgrades=Object.assign({}, base.upgrades, p.upgrades||{});
-  if(!Array.isArray(p.quests)) p.quests=base.quests.slice();
+  if(!Array.isArray(p.quests) || !p.quests.length) p.quests = base.quests.slice();
   if(!Array.isArray(p.dailyLog)) p.dailyLog=[];
   if(!p.legacy) p.legacy={xpBonus:0,gpBonus:0};
   if(typeof p.ascensions!=="number") p.ascensions=0;
@@ -749,4 +749,5 @@ document.addEventListener("DOMContentLoaded", () => {
 </body>
 </html>
 ```
+
 
