@@ -745,46 +745,36 @@ function updateUI(){
 }
 
 /* ===== boot ===== */
-/* ===== FINAL FIXED BOOT SEQUENCE ===== */
 (function boot() {
-  console.log("⚙️ Booting LevelUp Quest (final stable)...");
+  console.log("⚙️ Booting LevelUp Quest — Stable Build");
 
-  // Try to load raw store
   let store;
   try {
     store = JSON.parse(localStorage.getItem(PROFILES_KEY));
-  } catch {
+  } catch (e) {
+    console.warn("Corrupted store, recreating...");
     store = null;
   }
 
-  // If no data, create brand new default
+  // If no profiles exist yet
   if (!store || !store.activeProfile || !store.profiles || Object.keys(store.profiles).length === 0) {
-    console.log("No existing profile — creating Adventurer_1");
     const name = "Adventurer_1";
-    const newPlayer = defaultPlayer();
-    store = { activeProfile: name, profiles: { [name]: newPlayer } };
+    player = defaultPlayer();
+    store = { activeProfile: name, profiles: { [name]: player } };
     localStorage.setItem(PROFILES_KEY, JSON.stringify(store));
+    console.log("🆕 Created new profile", name);
+  } else {
+    ACTIVE = store.activeProfile;
+    const saved = store.profiles[ACTIVE];
+    player = hydrate(defaultPlayer(), saved);
+    store.profiles[ACTIVE] = player;
+    console.log("✅ Loaded profile", ACTIVE);
   }
 
   PROFILES = store;
   ACTIVE = store.activeProfile;
-  player = store.profiles[ACTIVE]; // ✅ Directly use stored data, not hydrate()
 
-  // Safety: fill in missing keys (never overwrite quests)
-  const base = defaultPlayer();
-  for (const key in base) {
-    if (!(key in player)) player[key] = base[key];
-  }
-  // ensure nested objects exist
-  player.meta = Object.assign({}, base.meta, player.meta || {});
-  player.shop = Object.assign({}, base.shop, player.shop || {});
-  player.settings = Object.assign({}, base.settings, player.settings || {});
-  player.world = Object.assign({}, base.world, player.world || {});
-  player.upgrades = Object.assign({}, base.upgrades, player.upgrades || {});
-  if (!Array.isArray(player.quests)) player.quests = base.quests.slice();
-
-  // ✅ Quests keep their "done" state exactly as saved
-  // Daily rollover only resets them when day changes
+  // Daily rollover logic
   if (!player.meta.lastDate) {
     player.meta.lastDate = todayStr();
     player.meta.lastRolloverAt = timeLabel();
@@ -794,15 +784,16 @@ function updateUI(){
     performRollover();
   }
 
-  // Save + render
   saveActiveProfile();
   populateProfileSelect();
   renderAll();
   updateUI();
-
   try { musicEl.play().catch(() => {}); } catch {}
-  console.log("✅ Boot complete. Active:", ACTIVE);
+
+  console.log("✅ Boot complete for", ACTIVE);
 })();
+
+
 
 
 
