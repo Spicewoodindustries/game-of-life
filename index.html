@@ -2,56 +2,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#001a66">
-
-<script>
-  // Register service worker + show update banner when a new version is ready
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', async () => {
-      const reg = await navigator.serviceWorker.register('service-worker.js');
-
-      // Listen for new SW installing
-      reg.addEventListener('updatefound', () => {
-        const newSW = reg.installing;
-        if (!newSW) return;
-        newSW.addEventListener('statechange', () => {
-          if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-            showUpdateBanner(reg);
-          }
-        });
-      });
-    });
-
-    // Mini in-page banner for updates
-    function showUpdateBanner(reg) {
-      const bar = document.createElement('div');
-      bar.style.cssText = `
-        position:fixed;left:0;right:0;bottom:0;z-index:9999;
-        background:#16204f;color:#ffff55;border-top:1px solid #ffff55;
-        padding:10px 12px;display:flex;gap:10px;align-items:center;justify-content:center;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;`;
-      bar.innerHTML = `
-        <span>✨ New version available.</span>
-        <button id="updReload" style="padding:6px 10px;border:1px solid #ffff55;background:#061a55;color:#ffff55;cursor:pointer">
-          Update now
-        </button>`;
-      document.body.appendChild(bar);
-      document.getElementById('updReload').onclick = async () => {
-        if (reg.waiting) {
-          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          window.location.reload();
-        });
-      };
-    }
-  }
-</script>
-
-<link rel="apple-touch-icon" href="assets/avatar_2.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>LevelUp Quest — v3.5 (Ascension & Rebirth Loop)</title>
 <style>
@@ -256,13 +206,6 @@ canvas#avatar{background:#000c2e;border:1px solid var(--fg)}
 /* ===== constants & helpers ===== */
 const LEGACY_KEY="levelupQuest_v30";
 const PROFILES_KEY="levelupQuest_profiles";
-  // --- MIGRATION BRIDGE (old save → new profile system) ---
-const legacyData = localStorage.getItem(LEGACY_KEY);
-if (legacyData && !localStorage.getItem(PROFILES_KEY)) {
-  console.log("Migrating old LevelUp Quest save...");
-  localStorage.setItem(PROFILES_KEY, legacyData);
-}
-// --- END MIGRATION BRIDGE ---
 const MAX_LEVEL=10;
 const baseXpNeeded=300; // pacing
 const DEFAULT_HABIT_XP=12, DEFAULT_HABIT_GP=6;
@@ -800,4 +743,5 @@ function renderAll(){ renderQuests(); renderShop(); renderUpgrades(); updateUI()
 </body>
 </html>
 ```
+
 
