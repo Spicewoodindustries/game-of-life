@@ -738,8 +738,15 @@ function renderAll(){ renderQuests(); renderShop(); renderUpgrades(); updateUI()
   else if(needsRollover()){ performRollover(); }
   renderAll();
   (async()=>{ try{ musicEl.play().catch(()=>{});}catch(e){} })();
-})();
+  });
+
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("✅ DOM ready — booting LevelUp Quest");
+  boot();
+});
+
 </script>
 </body>
 </html>
 ```
+
