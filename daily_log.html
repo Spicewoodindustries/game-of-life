@@ -19,13 +19,62 @@ th{background:#0b2a7a}
   <tbody></tbody>
 </table>
 <script>
-const data=JSON.parse(localStorage.getItem("levelupQuest_v30")||"{}");
-const log=Array.isArray(data.dailyLog)?data.dailyLog:[];
-const tbody=document.querySelector("#logTable tbody");
-log.slice().reverse().forEach(day=>{
-  const tr=document.createElement("tr");
-  tr.innerHTML=`<td>${day.date}</td><td>${(day.completed||[]).join(", ")}</td><td>${day.xp||0}</td><td>${day.gp||0}</td>`;
-  tbody.appendChild(tr);
+document.addEventListener("DOMContentLoaded", () => {
+  console.log("📘 Daily Log page loaded");
+
+  // 1️⃣ Get stored profiles safely
+  const storeRaw = localStorage.getItem("levelupQuest_profiles");
+  if (!storeRaw) {
+    console.warn("No saved data found — daily log empty");
+    return;
+  }
+
+  let store;
+  try {
+    store = JSON.parse(storeRaw);
+  } catch (e) {
+    console.error("Corrupted localStorage data:", e);
+    return;
+  }
+
+  // 2️⃣ Identify active player
+  const active = store.activeProfile;
+  if (!active || !store.profiles[active]) {
+    console.warn("No active profile found");
+    return;
+  }
+
+  const log = store.profiles[active].dailyLog || [];
+  console.log(`Loaded ${log.length} log entries for ${active}`);
+
+  // 3️⃣ Get table body
+  const tbody = document.querySelector("tbody");
+  if (!tbody) {
+    console.error("No <tbody> found in table");
+    return;
+  }
+
+  // 4️⃣ Populate table rows
+  if (log.length === 0) {
+    const row = document.createElement("tr");
+    row.innerHTML = `<td colspan="4" style="text-align:center;">No log entries yet.</td>`;
+    tbody.appendChild(row);
+  } else {
+    log.slice().reverse().forEach(entry => {
+      const row = document.createElement("tr");
+      const completed = entry.completed?.join(", ") || "(none)";
+      row.innerHTML = `
+        <td>${entry.date || "-"}</td>
+        <td>${completed}</td>
+        <td>${entry.xp ?? 0}</td>
+        <td>${entry.gp ?? 0}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  // 5️⃣ Optional styling feedback
+  console.log("✅ Daily Log rendered successfully");
 });
 </script>
 </body>
