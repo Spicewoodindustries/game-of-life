@@ -745,53 +745,31 @@ function updateUI(){
 }
 
 /* ===== boot ===== */
-(function boot() {
-  console.log("⚙️ Booting LevelUp Quest — Stable Build");
-
-  let store;
+(function ensurePlayerLoaded(){
   try {
-    store = JSON.parse(localStorage.getItem(PROFILES_KEY));
+    const store = JSON.parse(localStorage.getItem("levelupQuest_profiles"));
+    if (store && store.activeProfile && store.profiles[store.activeProfile]) {
+      PROFILES = store;
+      ACTIVE = store.activeProfile;
+      player = store.profiles[ACTIVE];
+      console.log("✅ Loaded existing player:", ACTIVE);
+    } else {
+      console.warn("⚠️ No existing profile found, creating new default");
+      const name = "Adventurer_1";
+      player = defaultPlayer();
+      PROFILES = { activeProfile: name, profiles: { [name]: player } };
+      ACTIVE = name;
+      localStorage.setItem("levelupQuest_profiles", JSON.stringify(PROFILES));
+    }
   } catch (e) {
-    console.warn("Corrupted store, recreating...");
-    store = null;
-  }
-
-  // If no profiles exist yet
-  if (!store || !store.activeProfile || !store.profiles || Object.keys(store.profiles).length === 0) {
+    console.error("❌ Error restoring player:", e);
     const name = "Adventurer_1";
     player = defaultPlayer();
-    store = { activeProfile: name, profiles: { [name]: player } };
-    localStorage.setItem(PROFILES_KEY, JSON.stringify(store));
-    console.log("🆕 Created new profile", name);
-  } else {
-    ACTIVE = store.activeProfile;
-    const saved = store.profiles[ACTIVE];
-    player = hydrate(defaultPlayer(), saved);
-    store.profiles[ACTIVE] = player;
-    console.log("✅ Loaded profile", ACTIVE);
+    PROFILES = { activeProfile: name, profiles: { [name]: player } };
+    ACTIVE = name;
   }
-
-  PROFILES = store;
-  ACTIVE = store.activeProfile;
-
-  // Daily rollover logic
-  if (!player.meta.lastDate) {
-    player.meta.lastDate = todayStr();
-    player.meta.lastRolloverAt = timeLabel();
-    addJournalLine("The road ahead calls…");
-    startNewDay();
-  } else if (player.meta.lastDate !== todayStr()) {
-    performRollover();
-  }
-
-  saveActiveProfile();
-  populateProfileSelect();
-  renderAll();
-  updateUI();
-  try { musicEl.play().catch(() => {}); } catch {}
-
-  console.log("✅ Boot complete for", ACTIVE);
 })();
+
 
 
 
