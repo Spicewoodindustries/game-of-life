@@ -730,24 +730,58 @@ function updateUI(){
 }
 
 /* ===== boot ===== */
-function renderAll(){ renderQuests(); renderShop(); renderUpgrades(); updateUI(); }
 (function boot(){
-  if(!ACTIVE){ if(!ensureActiveProfile()){ populateProfileSelect(); return; } }
-  populateProfileSelect();
-  if(!player.meta.lastDate){ player.meta.lastDate=todayStr(); player.meta.lastRolloverAt=timeLabel(); addJournalLine("The horizon blazes with promise."); startNewDay(); saveActiveProfile(); }
-  else if(needsRollover()){ performRollover(); }
-  renderAll();
-  (async()=>{ try{ musicEl.play().catch(()=>{});}catch(e){} })();
-  });
+  console.log("Booting LevelUp Quest...");
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ DOM ready — booting LevelUp Quest");
-  boot();
-});
+  // 1. Load from localStorage
+  const store = getProfilesStore();
+  console.log("Loaded store:", store);
+
+  // 2. Pick active profile or create one
+  if (store.activeProfile && store.profiles[store.activeProfile]) {
+    ACTIVE = store.activeProfile;
+    player = hydrate(defaultPlayer(), store.profiles[ACTIVE]);
+    console.log("Loaded existing profile:", ACTIVE);
+  } else {
+    console.log("No profile found — creating Adventurer_1");
+    const newProfile = "Adventurer_1";
+    store.profiles[newProfile] = defaultPlayer();
+    store.activeProfile = newProfile;
+    ACTIVE = newProfile;
+    player = store.profiles[newProfile];
+    setProfilesStore(store);
+  }
+
+  // 3. Populate the dropdown
+  populateProfileSelect();
+
+  // 4. Daily setup
+  if (!player.meta.lastDate) {
+    player.meta.lastDate = todayStr();
+    player.meta.lastRolloverAt = timeLabel();
+    addJournalLine("The horizon blazes with promise.");
+    startNewDay();
+    saveActiveProfile();
+  } else if (needsRollover()) {
+    performRollover();
+  }
+
+  // 5. Render UI
+  renderAll();
+
+  // 6. Music
+  (async () => {
+    try { musicEl.play().catch(() => {}); } catch (e) {}
+  })();
+
+  console.log("Boot complete — active player:", player);
+})();
+
 
 </script>
 </body>
 </html>
 ```
+
 
 
