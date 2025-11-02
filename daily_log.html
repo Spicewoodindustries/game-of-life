@@ -24,43 +24,59 @@ tr.highlight td { background:#16204f; }
 <div id="logContainer">Loading log...</div>
 
 <script>
-const PROFILES_KEY = "levelupQuest_profiles";
-const store = JSON.parse(localStorage.getItem(PROFILES_KEY) || "{}");
+document.addEventListener("DOMContentLoaded", () => {
+  const PROFILES_KEY = "levelupQuest_profiles";
+  const raw = localStorage.getItem(PROFILES_KEY);
+  console.log("RAW STORAGE:", raw);
 
-const container = document.getElementById("logContainer");
+  const container = document.getElementById("logContainer");
 
-if (!store.activeProfile || !store.profiles || !store.profiles[store.activeProfile]) {
-  container.innerHTML = "<p>No saved profile found. Play the game first, then come back.</p>";
-} else {
-  const player = store.profiles[store.activeProfile];
-  const log = player.dailyLog || [];
-
-  if (!Array.isArray(log) || log.length === 0) {
-    container.innerHTML = "<p>No daily entries yet. Complete a day to see it here.</p>";
-  } else {
-    const today = new Date().toISOString().split("T")[0];
-    let html = `
-      <table>
-        <tr><th>Date</th><th>Completed</th><th>XP</th><th>GP</th><th>Event</th></tr>
-    `;
-    log.slice().reverse().forEach(entry => {
-      const isToday = entry.date.includes(today);
-      html += `
-        <tr class="${isToday ? 'highlight' : ''}">
-          <td>${entry.date}</td>
-          <td>${(entry.completed && entry.completed.length ? entry.completed.join(", ") : "—")}</td>
-          <td>${entry.xp ?? "—"}</td>
-          <td>${entry.gp ?? "—"}</td>
-          <td>${entry.event ?? "—"}</td>
-        </tr>
-      `;
-    });
-    html += "</table>";
-    container.innerHTML = html;
+  if (!raw) {
+    container.innerHTML = "<p>No local save found. Play the game first.</p>";
+    return;
   }
-}
+
+  let store;
+  try { store = JSON.parse(raw); }
+  catch { container.innerHTML = "<p>Error parsing save data.</p>"; return; }
+
+  if (!store.activeProfile || !store.profiles || !store.profiles[store.activeProfile]) {
+    container.innerHTML = "<p>No active profile found.</p>";
+    return;
+  }
+
+  const player = store.profiles[store.activeProfile];
+  const log = Array.isArray(player.dailyLog) ? player.dailyLog : [];
+  console.log("DAILY LOG ARRAY:", log);
+
+  if (log.length === 0) {
+    container.innerHTML = "<p>No daily entries yet. Complete a day to see it here.</p>";
+    return;
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  let html = `
+    <table>
+      <tr><th>Date</th><th>Completed</th><th>XP</th><th>GP</th><th>Event</th></tr>
+  `;
+  log.slice().reverse().forEach(entry => {
+    const isToday = entry.date.includes(today);
+    html += `
+      <tr class="${isToday ? 'highlight' : ''}">
+        <td>${entry.date}</td>
+        <td>${(entry.completed && entry.completed.length ? entry.completed.join(", ") : "—")}</td>
+        <td>${entry.xp ?? "—"}</td>
+        <td>${entry.gp ?? "—"}</td>
+        <td>${entry.event ?? "—"}</td>
+      </tr>
+    `;
+  });
+  html += "</table>";
+  container.innerHTML = html;
+});
 </script>
 </body>
 </html>
+
 
 
