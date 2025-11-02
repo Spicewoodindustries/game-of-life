@@ -3,15 +3,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Game of Life – v3.1 (FX + Battles • EGA)</title>
+<title>LevelUp Quest – v3.0 (Living World • EGA)</title>
 <style>
 :root{
-  --bg:#001a66; --panel:#0b2a7a; --fg:#55ffff; --accent:#ffff55; --mag:#ff55ff; --warn:#ff5555;
+  /* EGA-style palette */
+  --bg:#001a66;        /* deep blue */
+  --panel:#0b2a7a;     /* mid blue */
+  --fg:#55ffff;        /* bright cyan text */
+  --accent:#ffff55;    /* yellow accent */
+  --mag:#ff55ff;       /* magenta accent */
+  --warn:#ff5555;
 }
 html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:"Courier New",monospace}
 .wrap{max-width:1060px;margin:0 auto;padding:20px}
 h1,h2{margin:0 0 10px;text-shadow:0 0 6px var(--fg)}
-a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 .card{border:1px solid var(--fg);background:linear-gradient(180deg,var(--panel),#062063);padding:12px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -25,49 +32,47 @@ input[type="text"],input[type="number"]{background:#001043;border:1px solid var(
 .progress-inner{background:var(--accent);height:100%;width:0%;transition:width .4s ease}
 .meta{opacity:.9}
 .err{color:var(--warn)}
+/* Quest flow */
 .task{margin:6px 0}
 .section-title{margin-top:10px;border-top:1px dashed var(--fg);padding-top:8px}
 .fade-out{animation:out .28s ease forwards}
 @keyframes out{to{opacity:0;transform:translateX(12px)}}
+/* Level-up celebration */
 .levelup-banner{display:none;margin-top:8px;border:1px solid var(--fg);padding:8px;text-align:center;background:#001043}
 .lvl-show{display:block;animation:flash .9s ease-out}
 @keyframes flash{0%{box-shadow:0 0 0px var(--accent)}50%{box-shadow:0 0 18px var(--accent)}100%{box-shadow:0 0 0px var(--accent)}}
 .flash-once{animation:btnflash .28s ease-out}
 @keyframes btnflash{0%{box-shadow:0 0 0px var(--mag)}50%{box-shadow:0 0 14px var(--mag)}100%{box-shadow:0 0 0px var(--mag)}}
+/* Avatar area */
 .avatar-wrap{display:flex;gap:12px;align-items:center}
 canvas#avatar{background:#000c2e;border:1px solid var(--fg)}
-/* FX overlay canvas */
-.fx-wrap{position:relative}
-#fxCanvas{position:absolute;left:0;top:0;pointer-events:none}
-/* Battle log */
-#battleLog{min-height:28px;margin-top:6px;padding:6px;border:1px dashed var(--fg);background:#001043}
+/* Inline edit controls */
+.inline-controls{display:flex;gap:6px;align-items:center;margin-top:6px}
+.editing{background:#071e60;padding:6px}
+ul.compact{margin:6px 0 0 16px;padding:0}
+ul.compact li{margin:2px 0}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="row">
-    <h1>LEVELUP QUEST — v3.1</h1>
+    <h1>LEVELUP QUEST — v3.0</h1>
     <a class="pill right" href="daily_log.html">📘 Daily Log</a>
     <span class="pill">🔕 Sound: <span id="soundState">Muted</span></span>
     <button id="toggleSoundBtn">Toggle Sound</button>
   </div>
 
   <div class="grid">
-    <!-- Player / Avatar (+ FX canvas layered on top) -->
+    <!-- Player / Avatar -->
     <div class="card" id="statsCard">
       <h2>Player</h2>
-      <div class="fx-wrap">
-        <div class="avatar-wrap">
-          <canvas id="avatar" width="64" height="64" title="Your avatar evolves each level"></canvas>
-          <div style="flex:1">
-            <p>Level <span id="level">1</span> | XP <span id="xp">0</span>/<span id="xpNeeded">100</span> | GP 💰 <span id="gold">0</span></p>
-            <div class="progress"><div id="xpBar" class="progress-inner"></div></div>
-            <div id="levelUpBanner" class="levelup-banner">✨ LEVEL UP! ✨</div>
-            <div id="battleLog" class="small">Ready up, adventurer.</div>
-          </div>
+      <div class="avatar-wrap">
+        <canvas id="avatar" width="64" height="64" title="Your avatar evolves each level"></canvas>
+        <div>
+          <p>Level <span id="level">1</span> | XP <span id="xp">0</span>/<span id="xpNeeded">100</span> | GP 💰 <span id="gold">0</span></p>
+          <div class="progress"><div id="xpBar" class="progress-inner"></div></div>
+          <div id="levelUpBanner" class="levelup-banner">✨ LEVEL UP! ✨</div>
         </div>
-        <!-- full-card overlay for confetti/particle FX -->
-        <canvas id="fxCanvas" width="650" height="120"></canvas>
       </div>
 
       <h2 class="section-title">Streaks</h2>
@@ -91,7 +96,7 @@ canvas#avatar{background:#000c2e;border:1px solid var(--fg)}
     <div class="card" id="questsCard">
       <h2>Active Quests</h2>
       <div id="tasks"></div>
-      <div class="row small" style="margin-top:8px">
+      <div class="inline-controls small" style="margin-top:8px">
         <input id="newQuestName" type="text" placeholder="Quest name">
         <input id="newQuestXp" type="number" placeholder="XP" min="1" step="1" style="width:90px">
         <input id="newQuestGp" type="number" placeholder="GP" min="0" step="1" style="width:90px">
@@ -108,7 +113,7 @@ canvas#avatar{background:#000c2e;border:1px solid var(--fg)}
     <div class="card">
       <h2>Reward Shop</h2>
       <div id="shopList"></div>
-      <div class="row small" style="margin-top:8px">
+      <div class="inline-controls small" style="margin-top:8px">
         <input id="newRewardName" type="text" placeholder="Reward name">
         <input id="newRewardCost" type="number" placeholder="Cost (GP)" min="1" step="1" style="width:120px">
         <button id="addRewardBtn">Add Reward</button>
@@ -121,12 +126,12 @@ canvas#avatar{background:#000c2e;border:1px solid var(--fg)}
 </div>
 
 <script>
-/* ===== Keep save key so your v3.0 progress loads ===== */
+/* ---------- Core setup ---------- */
 const STORAGE_KEY="levelupQuest_v30";const baseXpNeeded=100;
 function todayStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function timeLabel(d=new Date()){return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
 
-/* Sound */
+/* Sound (muted by default) */
 let audioCtx=null;let soundMuted=true;
 function ensureAudioCtx(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)()}
 function beep(f=880,d=0.10,t="square",g=0.05){if(soundMuted)return;ensureAudioCtx();const o=audioCtx.createOscillator(),ga=audioCtx.createGain();o.type=t;o.frequency.value=f;ga.gain.value=g;o.connect(ga);ga.connect(audioCtx.destination);o.start();setTimeout(()=>o.stop(),d*1000)}
@@ -142,17 +147,32 @@ let player={
     {name:"Healthy Meal",xp:10,gp:5,done:false},
     {name:"Reflect/Journaling",xp:20,gp:10,done:false}
   ],
-  meta:{lastDate:null,lastRolloverAt:null,streak:0,longestStreak:0,totalXpEarned:0,totalGpEarned:0,totalQuestsCompleted:0,rewardsBought:0,todayXp:0,todayGp:0},
-  shop:{items:[{id:"snack",label:"Small Treat",cost:30},{id:"movie",label:"Movie Night",cost:60},{id:"dayoff",label:"Day Off",cost:120}],purchases:[]},
+  meta:{
+    lastDate:null,lastRolloverAt:null,
+    streak:0,longestStreak:0,
+    totalXpEarned:0,totalGpEarned:0,totalQuestsCompleted:0,rewardsBought:0,
+    todayXp:0,todayGp:0
+  },
+  shop:{items:[
+    {id:"snack",label:"Small Treat",cost:30},
+    {id:"movie",label:"Movie Night",cost:60},
+    {id:"dayoff",label:"Day Off",cost:120}
+  ],purchases:[]},
   dailyLog:[],
   settings:{soundMuted:true}
 };
 
 /* Persistence */
 function saveGame(){localStorage.setItem(STORAGE_KEY,JSON.stringify(player))}
-function loadGame(){const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;try{const p=JSON.parse(raw);player=Object.assign({},player,p);player.meta=Object.assign({},player.meta,p.meta||{});player.shop=Object.assign({},player.shop,p.shop||{});player.settings=Object.assign({},player.settings,p.settings||{});if(p.quests)player.quests=p.quests;if(Array.isArray(p.dailyLog))player.dailyLog=p.dailyLog;}catch(e){console.warn("Save corrupted; defaults used.",e)}}
+function loadGame(){const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;try{const p=JSON.parse(raw);player=Object.assign({},player,p);
+  player.meta=Object.assign({},player.meta,p.meta||{});
+  player.shop=Object.assign({},player.shop,p.shop||{});
+  player.settings=Object.assign({},player.settings,p.settings||{});
+  if(p.quests)player.quests=p.quests;
+  if(Array.isArray(p.dailyLog))player.dailyLog=p.dailyLog;
+}catch(e){console.warn("Save corrupted; defaults used.",e)}}
 
-/* Math/UI helpers */
+/* Math & UI helpers */
 function xpNeededFor(l){return baseXpNeeded*Math.pow(1.2,l-1)}
 function setMsg(el,txt,err=false){el.textContent=txt||"";el.classList.toggle("err",!!err)}
 function flashButton(btn){if(!btn)return;btn.classList.remove("flash-once");void btn.offsetWidth;btn.classList.add("flash-once")}
@@ -161,55 +181,43 @@ function showLevelUpBanner(){const el=document.getElementById("levelUpBanner");e
 /* Avatar render */
 const avatarCanvas=document.getElementById("avatar"), actx=avatarCanvas.getContext("2d");
 function drawAvatar(){
-  const lvl=Math.max(1,Math.min(5,player.level)); const img=new Image(); img.src=`assets/avatar_${lvl}.png`;
+  const lvl=Math.max(1,Math.min(5,player.level));
+  const img=new Image(); img.src=`assets/avatar_${lvl}.png`;
   img.onload=()=>{actx.clearRect(0,0,64,64);actx.drawImage(img,0,0,64,64)};
-  img.onerror=()=>{actx.clearRect(0,0,64,64);actx.fillStyle="#002b99";actx.fillRect(0,0,64,64);actx.fillStyle="#55ffff";actx.fillRect(12,16,40,40);actx.fillStyle="#001a66";actx.fillRect(20,24,24,24);};
+  img.onerror=()=>{ // placeholder
+    actx.clearRect(0,0,64,64);
+    actx.fillStyle="#002b99";actx.fillRect(0,0,64,64);
+    actx.fillStyle="#55ffff";actx.fillRect(12,16,40,40);
+    actx.fillStyle="#001a66";actx.fillRect(20,24,24,24);
+  };
 }
 /* Avatar particles on level-up */
 function sparkAvatar(){
-  const N=24, parts=[]; for(let i=0;i<N;i++){parts.push({x:32,y:32,r:1+Math.random()*2,dx:(Math.random()*2-1)*2,dy:(Math.random()*2-1)*2,life:20+Math.random()*15})}
-  let t=0; const raf=()=>{t++;actx.save();actx.globalCompositeOperation="lighter";
-    parts.forEach(p=>{p.x+=p.dx;p.y+=p.dy;p.dy+=0.05;p.life--; actx.fillStyle=`rgba(255,255,85,${Math.max(0,p.life/30)})`; actx.beginPath();actx.arc(p.x,p.y,p.r,0,Math.PI*2);actx.fill();});
-    actx.restore(); if(t<28) requestAnimationFrame(raf); else drawAvatar();
-  }; requestAnimationFrame(raf);
-}
-
-/* ===== NEW: FX Canvas & Battle Flavor ===== */
-const fxCanvas=document.getElementById("fxCanvas"), fctx=fxCanvas.getContext("2d");
-function burstFX(x=120,y=40,color="rgba(255,255,85,0.9)"){
-  const P=40, pts=[];
-  for(let i=0;i<P;i++){pts.push({x,y,dx:(Math.random()*2-1)*3,dy:(Math.random()*2-1)*2-1,life:18+Math.random()*14,clr:color,r:1+Math.random()*2});}
-  let frames=0;
-  function loop(){
-    frames++; fctx.clearRect(0,0,fxCanvas.width,fxCanvas.height);
-    pts.forEach(p=>{p.x+=p.dx; p.y+=p.dy; p.dy+=0.06; p.life--; fctx.fillStyle=p.clr; fctx.beginPath(); fctx.arc(p.x,p.y,p.r,0,Math.PI*2); fctx.fill();});
-    if(frames<28) requestAnimationFrame(loop); else fctx.clearRect(0,0,fxCanvas.width,fxCanvas.height);
+  const N=24, parts=[];
+  for(let i=0;i<N;i++){
+    parts.push({x:32,y:32,r:1+Math.random()*2,dx:(Math.random()*2-1)*2,dy:(Math.random()*2-1)*2,life:20+Math.random()*15});
   }
-  loop();
-}
-
-const ENEMIES=[
-  {name:"Noise Goblin", line:"silenced by your focus!"},
-  {name:"Distraction Imp", line:"banished to the sidelines!"},
-  {name:"Laziness Ooze", line:"evaporated under pressure!"},
-  {name:"Procrastination Wraith", line:"faded at dawn!"},
-  {name:"Doomscroll Drake", line:"grounded for the day!"}
-];
-
-function battleMessage(questName,xp,gp){
-  const e=ENEMIES[Math.floor(Math.random()*ENEMIES.length)];
-  const line=`You defeated the ${e.name} — ${e.line} (+${xp} XP / +${gp} GP)`;
-  const log=document.getElementById("battleLog");
-  log.textContent=line;
+  let t=0;
+  const raf=()=>{t++;actx.save();actx.globalCompositeOperation="lighter";
+    parts.forEach(p=>{p.x+=p.dx;p.y+=p.dy;p.dy+=0.05;p.life--;
+      actx.fillStyle=`rgba(255,255,85,${Math.max(0,p.life/30)})`;
+      actx.beginPath();actx.arc(p.x,p.y,p.r,0,Math.PI*2);actx.fill();
+    });
+    actx.restore();
+    if(t<28) requestAnimationFrame(raf);
+    else drawAvatar();
+  };
+  requestAnimationFrame(raf);
 }
 
 /* Rollover & daily log */
 function needsRollover(){return player.meta.lastDate && player.meta.lastDate!==todayStr()}
 function writeDailyLog(){
+  // capture completed quests’ names and totals before reset
   const completed=player.quests.filter(q=>q.done).map(q=>q.name);
-  const entry={date:player.meta.lastDate||todayStr(),completed,xp:player.meta.todayXp||0,gp:player.meta.todayGp||0};
+  const entry={date:player.meta.lastDate||todayStr(),completed:completed,xp:player.meta.todayXp||0,gp:player.meta.todayGp||0};
   if(completed.length||entry.xp||entry.gp){player.dailyLog.push(entry)}
-  player.meta.todayXp=0; player.meta.todayGp=0;
+  player.meta.todayXp=0;player.meta.todayGp=0;
 }
 function performRollover(){
   writeDailyLog();
@@ -218,7 +226,7 @@ function performRollover(){
   if(player.meta.streak>player.meta.longestStreak)player.meta.longestStreak=player.meta.streak;
   player.quests.forEach(q=>q.done=false);
   document.getElementById("doneToday").innerHTML="";
-  player.meta.lastDate=todayStr(); player.meta.lastRolloverAt=timeLabel();
+  player.meta.lastDate=todayStr();player.meta.lastRolloverAt=timeLabel();
   saveGame();
 }
 function ensureDailyRolloverOnLoad(){
@@ -229,33 +237,51 @@ setInterval(()=>{if(needsRollover()){performRollover();updateUI();renderAll()}},
 
 /* Rendering */
 function renderQuests(){
-  const active=document.getElementById("tasks"); active.innerHTML="";
-  const doneDiv=document.getElementById("doneToday"); doneDiv.innerHTML="";
+  const active=document.getElementById("tasks");active.innerHTML="";
+  const doneDiv=document.getElementById("doneToday");
   player.quests.forEach((q,i)=>{
-    if(q.done){
-      const row=document.createElement("div"); row.className="task row";
+    if(q.done){ // already completed → show in completed section
+      const row=document.createElement("div");
+      row.className="task row";
       row.innerHTML=`<span>✔ ${q.name} (+${q.xp} XP / +${q.gp} GP)</span>
         <button data-undo="${i}">Undo</button>
         <button data-edit="${i}">✏️ Edit</button>`;
-      doneDiv.appendChild(row); return;
+      doneDiv.appendChild(row);
+      return;
     }
     const row=document.createElement("div"); row.className="task row";
-    row.innerHTML=`<label style="flex:1;">${q.name} (+${q.xp} XP / +${q.gp} GP)</label>
+    row.innerHTML=`
+      <label style="flex:1;">${q.name} (+${q.xp} XP / +${q.gp} GP)</label>
       <button data-comp="${i}">Complete</button>
-      <button data-edit="${i}">✏️ Edit</button>`;
+      <button data-edit="${i}">✏️ Edit</button>
+    `;
     active.appendChild(row);
   });
-  active.querySelectorAll('button[data-comp]').forEach(b=>b.addEventListener("click",(e)=>{completeQuest(+e.currentTarget.dataset.comp,e.currentTarget)}));
-  doneDiv.querySelectorAll('button[data-undo]').forEach(b=>b.addEventListener("click",(e)=>{undoQuest(+e.currentTarget.dataset.undo)}));
-  document.querySelectorAll('button[data-edit]').forEach(b=>b.addEventListener("click",(e)=>openQuestEditor(+e.currentTarget.dataset.edit)));
+
+  // complete / undo
+  active.querySelectorAll('button[data-comp]').forEach(b=>b.addEventListener("click",(e)=>{
+    const i=+e.currentTarget.dataset.comp; completeQuest(i,e.currentTarget);
+  }));
+  doneDiv.querySelectorAll('button[data-undo]').forEach(b=>b.addEventListener("click",(e)=>{
+    const i=+e.currentTarget.dataset.undo; undoQuest(i);
+  }));
+
+  // edit buttons (both sections)
+  document.querySelectorAll('button[data-edit]').forEach(b=>b.addEventListener("click",(e)=>{
+    const i=+e.currentTarget.dataset.edit; openQuestEditor(i);
+  }));
 }
 
 function openQuestEditor(i){
   const q=player.quests[i];
-  let container=[...document.querySelectorAll('#tasks .task, #doneToday .task')].find(div=>div.querySelector(`button[data-edit="${i}"]`));
+  // find current container (active or done)
+  let container=[...document.querySelectorAll('#tasks .task, #doneToday .task')].find(div=>{
+    return div.querySelector(`button[data-edit="${i}"]`)
+  });
   if(!container) return;
+  container.classList.add("editing");
   container.innerHTML=`
-    <div class="row small" style="flex-wrap:wrap;background:#001043;border:1px dashed var(--fg);padding:6px">
+    <div class="inline-controls">
       <input id="qName_${i}" type="text" value="${q.name}">
       <input id="qXp_${i}" type="number" min="1" step="1" value="${q.xp}" style="width:90px">
       <input id="qGp_${i}" type="number" min="0" step="1" value="${q.gp}" style="width:90px">
@@ -266,42 +292,66 @@ function openQuestEditor(i){
   container.querySelector(`[data-saveq="${i}"]`).addEventListener("click",()=>{
     const name=document.getElementById(`qName_${i}`).value.trim();
     const xp=parseInt(document.getElementById(`qXp_${i}`).value,10)||q.xp;
-    const gp=parseInt(document.getElementById(`qGp_${i}`).value,10);
+    const gp=parseInt(document.getElementById(`qGp_${i}`).value,10); 
     if(!name) return;
     player.quests[i].name=name; player.quests[i].xp=Math.max(1,xp); player.quests[i].gp=Math.max(0,isNaN(gp)?q.gp:gp);
     saveGame(); renderAll();
   });
   container.querySelector(`[data-cancelq="${i}"]`).addEventListener("click",renderAll);
-  container.querySelector(`[data-delq="${i}"]`).addEventListener("click",()=>{player.quests.splice(i,1); saveGame(); renderAll();});
+  container.querySelector(`[data-delq="${i}"]`).addEventListener("click",()=>{
+    player.quests.splice(i,1); saveGame(); renderAll();
+  });
 }
 
 function renderShop(){
   const list=document.getElementById("shopList"); list.innerHTML="";
   player.shop.items.forEach(it=>{
     const row=document.createElement("div"); row.className="row";
-    row.innerHTML=`<span style="flex:1;">• ${it.label} — <span class="small">Cost: ${it.cost} GP</span></span>
+    row.innerHTML=`
+      <span style="flex:1;">• ${it.label} — <span class="small">Cost: ${it.cost} GP</span></span>
       <button data-editr="${it.id}">✏️ Edit</button>
-      <button data-buy="${it.id}">Buy</button>`;
+      <button data-buy="${it.id}">Buy</button>
+    `;
     list.appendChild(row);
   });
-  list.querySelectorAll('button[data-buy]').forEach(b=>b.addEventListener("click",(e)=>{const it=player.shop.items.find(x=>x.id===e.currentTarget.dataset.buy);flashButton(e.currentTarget);buyItem(it)}));
-  list.querySelectorAll('button[data-editr]').forEach(b=>b.addEventListener("click",(e)=>openRewardEditor(e.currentTarget.dataset.editr)));
+  list.querySelectorAll('button[data-buy]').forEach(b=>b.addEventListener("click",(e)=>{
+    const it=player.shop.items.find(x=>x.id===e.currentTarget.dataset.buy);
+    flashButton(e.currentTarget); buyItem(it);
+  }));
+  list.querySelectorAll('button[data-editr]').forEach(b=>b.addEventListener("click",(e)=>{
+    const id=e.currentTarget.dataset.editr; openRewardEditor(id);
+  }));
+
   const log=document.getElementById("purchaseLog"); log.innerHTML="";
-  player.shop.purchases.slice().reverse().forEach(p=>{const li=document.createElement("li"); li.textContent=`${p.time} — ${p.label} (-${p.cost} GP)`; log.appendChild(li);});
+  player.shop.purchases.slice().reverse().forEach(p=>{
+    const li=document.createElement("li"); li.textContent=`${p.time} — ${p.label} (-${p.cost} GP)`; log.appendChild(li);
+  });
 }
+
 function openRewardEditor(id){
-  const list=document.getElementById("shopList"); const idx=player.shop.items.findIndex(x=>x.id===id); if(idx<0) return; const it=player.shop.items[idx];
-  const row=[...list.children][idx]; row.innerHTML=`
-    <div class="row small" style="flex-wrap:wrap;background:#001043;border:1px dashed var(--fg);padding:6px">
+  const list=document.getElementById("shopList");
+  const idx=player.shop.items.findIndex(x=>x.id===id); if(idx<0) return;
+  const it=player.shop.items[idx];
+  const row=[...list.children][idx]; row.classList.add("editing");
+  row.innerHTML=`
+    <div class="inline-controls">
       <input id="rName_${idx}" type="text" value="${it.label}">
       <input id="rCost_${idx}" type="number" min="1" step="1" value="${it.cost}" style="width:120px">
       <button data-saver="${idx}">Save</button>
       <button data-cancelr="${idx}">Cancel</button>
       <button data-delr="${idx}" title="Delete">❌</button>
     </div>`;
-  row.querySelector(`[data-saver="${idx}"]`).addEventListener("click",()=>{const name=document.getElementById(`rName_${idx}`).value.trim();let cost=parseInt(document.getElementById(`rCost_${idx}`).value,10);if(!name)return;if(!cost||cost<1)cost=1;player.shop.items[idx].label=name;player.shop.items[idx].cost=cost;saveGame();renderShop();updateUI();});
-  row.querySelector(`[data-cancelr="${idx}"]`).addEventListener("click",renderShop);
-  row.querySelector(`[data-delr="${idx}"]`).addEventListener("click",()=>{player.shop.items.splice(idx,1);saveGame();renderShop();updateUI();});
+  row.querySelector(`[data-saver="${idx}"]`).addEventListener("click",()=>{
+    const name=document.getElementById(`rName_${idx}`).value.trim();
+    let cost=parseInt(document.getElementById(`rCost_${idx}`).value,10);
+    if(!name) return; if(!cost||cost<1) cost=1;
+    player.shop.items[idx].label=name; player.shop.items[idx].cost=cost;
+    saveGame(); renderShop(); updateUI();
+  });
+  row.querySelector(`[data-cancelr="${idx}"]`).addEventListener("click",()=>{ renderShop(); });
+  row.querySelector(`[data-delr="${idx}"]`).addEventListener("click",()=>{
+    player.shop.items.splice(idx,1); saveGame(); renderShop(); updateUI();
+  });
 }
 
 /* UI totals */
@@ -320,41 +370,69 @@ function updateUI(){
   document.getElementById("statTotalGp").textContent=player.meta.totalGpEarned||0;
   document.getElementById("statTotalQuests").textContent=player.meta.totalQuestsCompleted||0;
   document.getElementById("statRewardsBought").textContent=player.meta.rewardsBought||0;
-  soundMuted=!!player.settings.soundMuted; document.getElementById("soundState").textContent=soundMuted?"Muted":"On";
+  soundMuted=!!player.settings.soundMuted;
+  document.getElementById("soundState").textContent=soundMuted?"Muted":"On";
   drawAvatar();
 }
 
-/* Actions (enhanced completion -> FX + battle flavor) */
+/* Actions */
 function completeQuest(i,btn){
-  const q=player.quests[i]; if(q.done) return; q.done=true;
+  const q=player.quests[i]; if(q.done) return;
+  q.done=true;
   const node=btn.closest(".task"); if(node){node.classList.add("fade-out"); setTimeout(()=>renderAll(),280);}
   gainXP(q.xp); gainGold(q.gp);
   player.meta.todayXp+=q.xp; player.meta.todayGp+=q.gp;
   player.meta.totalQuestsCompleted=(player.meta.totalQuestsCompleted||0)+1;
   beep(880,0.06,"square",0.04);
-  burstFX(140,35,"rgba(255,255,85,0.95)");
-  battleMessage(q.name,q.xp,q.gp);
-  setMsg(document.getElementById("questMsg"),`Completed "${q.name}"`);
+  setMsg(document.getElementById("questMsg"),`Completed "${q.name}" +${q.xp} XP / +${q.gp} GP`);
   saveGame();
 }
 function undoQuest(i){
-  const q=player.quests[i]; if(!q.done) return; q.done=false;
+  const q=player.quests[i]; if(!q.done) return;
+  q.done=false;
   loseXP(q.xp); loseGold(q.gp);
   player.meta.todayXp=Math.max(0,player.meta.todayXp-q.xp);
   player.meta.todayGp=Math.max(0,player.meta.todayGp-q.gp);
-  setMsg(document.getElementById("questMsg"),`Undid "${q.name}".`); saveGame(); renderAll();
+  setMsg(document.getElementById("questMsg"),`Undid "${q.name}".`);
+  saveGame(); renderAll();
 }
+
 function gainXP(a){
   player.xp+=a; player.meta.totalXpEarned=(player.meta.totalXpEarned||0)+a;
-  let leveled=false; while(player.xp>=xpNeededFor(player.level)){player.xp-=xpNeededFor(player.level); player.level++; leveled=true;}
-  if(leveled) showLevelUpBanner(); updateUI();
+  let leveled=false;
+  while(player.xp>=xpNeededFor(player.level)){ player.xp-=xpNeededFor(player.level); player.level++; leveled=true; }
+  if(leveled) showLevelUpBanner();
+  updateUI();
 }
-function loseXP(a){player.xp=Math.max(0,player.xp-a); updateUI();}
-function gainGold(g){player.gold+=g; player.meta.totalGpEarned=(player.meta.totalGpEarned||0)+g; updateUI();}
-function loseGold(g){player.gold=Math.max(0,player.gold-g); updateUI();}
-function addQuest(){const name=document.getElementById("newQuestName").value.trim();let xp=parseInt(document.getElementById("newQuestXp").value,10);let gp=parseInt(document.getElementById("newQuestGp").value,10);if(!name){setMsg(document.getElementById("questMsg"),"Enter a quest name.",true);return}if(!xp||xp<1)xp=10;if(gp<0||isNaN(gp))gp=5;player.quests.push({name,xp,gp,done:false});document.getElementById("newQuestName").value="";document.getElementById("newQuestXp").value="";document.getElementById("newQuestGp").value="";saveGame();renderAll();setMsg(document.getElementById("questMsg"),`Added quest: ${name}`)}
-function buyItem(item){const msg=document.getElementById("shopMsg");if(player.gold<item.cost){setMsg(msg,`Not enough GP (need ${item.cost}, have ${player.gold}).`,true);beep(200,0.12,"square",0.04);return}player.gold-=item.cost;player.meta.rewardsBought=(player.meta.rewardsBought||0)+1;player.shop.purchases.push({time:new Date().toLocaleString(),label:item.label,cost:item.cost});saveGame();renderShop();updateUI();setMsg(msg,`Purchased: ${item.label} (−${item.cost} GP).`);beep(660,0.06,"square",0.04);setTimeout(()=>beep(990,0.08,"square",0.04),70)}
-function addReward(){const name=document.getElementById("newRewardName").value.trim();let cost=parseInt(document.getElementById("newRewardCost").value,10);if(!name){setMsg(document.getElementById("shopMsg"),"Enter a reward name.",true);return}if(!cost||cost<1)cost=30;const id=slug(name);player.shop.items.push({id,label:name,cost});document.getElementById("newRewardName").value="";document.getElementById("newRewardCost").value="";saveGame();renderShop();updateUI();setMsg(document.getElementById("shopMsg"),`Added reward: ${name}`)}
+function loseXP(a){ player.xp=Math.max(0,player.xp-a); updateUI(); }
+function gainGold(g){ player.gold+=g; player.meta.totalGpEarned=(player.meta.totalGpEarned||0)+g; updateUI(); }
+function loseGold(g){ player.gold=Math.max(0,player.gold-g); updateUI(); }
+
+function addQuest(){
+  const name=document.getElementById("newQuestName").value.trim();
+  let xp=parseInt(document.getElementById("newQuestXp").value,10); let gp=parseInt(document.getElementById("newQuestGp").value,10);
+  if(!name){setMsg(document.getElementById("questMsg"),"Enter a quest name.",true);return}
+  if(!xp||xp<1) xp=10; if(gp<0||isNaN(gp)) gp=5;
+  player.quests.push({name,xp,gp,done:false});
+  document.getElementById("newQuestName").value=""; document.getElementById("newQuestXp").value=""; document.getElementById("newQuestGp").value="";
+  saveGame(); renderAll(); setMsg(document.getElementById("questMsg"),`Added quest: ${name}`);
+}
+function buyItem(item){
+  const msg=document.getElementById("shopMsg");
+  if(player.gold<item.cost){setMsg(msg,`Not enough GP (need ${item.cost}, have ${player.gold}).`,true);beep(200,0.12,"square",0.04);return}
+  player.gold-=item.cost; player.meta.rewardsBought=(player.meta.rewardsBought||0)+1;
+  player.shop.purchases.push({time:new Date().toLocaleString(),label:item.label,cost:item.cost});
+  saveGame(); renderShop(); updateUI();
+  setMsg(msg,`Purchased: ${item.label} (−${item.cost} GP).`); beep(660,0.06,"square",0.04); setTimeout(()=>beep(990,0.08,"square",0.04),70);
+}
+function addReward(){
+  const name=document.getElementById("newRewardName").value.trim(); let cost=parseInt(document.getElementById("newRewardCost").value,10);
+  if(!name){setMsg(document.getElementById("shopMsg"),"Enter a reward name.",true);return}
+  if(!cost||cost<1) cost=30;
+  const id=slug(name); player.shop.items.push({id,label:name,cost});
+  document.getElementById("newRewardName").value=""; document.getElementById("newRewardCost").value="";
+  saveGame(); renderShop(); updateUI(); setMsg(document.getElementById("shopMsg"),`Added reward: ${name}`);
+}
 function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')}
 
 /* Controls */
@@ -365,7 +443,7 @@ document.getElementById("forceRolloverBtn").addEventListener("click",()=>{player
 document.getElementById("toggleSoundBtn").addEventListener("click",()=>{ensureAudioCtx();player.settings.soundMuted=!player.settings.soundMuted;soundMuted=player.settings.soundMuted;saveGame();updateUI();if(!soundMuted)beep(880,0.06,"square",0.04)});
 
 /* Render glue */
-function renderAll(){ renderQuests(); renderShop(); updateUI(); }
+function renderAll(){ document.getElementById("doneToday").innerHTML=""; renderQuests(); renderShop(); updateUI(); }
 loadGame(); soundMuted=!!player.settings.soundMuted; ensureDailyRolloverOnLoad(); renderAll();
 </script>
 </body>
