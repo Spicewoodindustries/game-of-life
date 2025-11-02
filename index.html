@@ -745,17 +745,64 @@ function updateUI(){
 }
 
 /* ===== boot ===== */
-function renderAll(){ renderQuests(); renderShop(); renderUpgrades(); updateUI(); }
-(function boot(){
-  if(!ACTIVE){ if(!ensureActiveProfile()){ populateProfileSelect(); return; } }
+/* ===== FINAL FIXED BOOT SEQUENCE ===== */
+(function boot() {
+  console.log("⚙️ Booting LevelUp Quest (final stable)...");
+
+  // Try to load raw store
+  let store;
+  try {
+    store = JSON.parse(localStorage.getItem(PROFILES_KEY));
+  } catch {
+    store = null;
+  }
+
+  // If no data, create brand new default
+  if (!store || !store.activeProfile || !store.profiles || Object.keys(store.profiles).length === 0) {
+    console.log("No existing profile — creating Adventurer_1");
+    const name = "Adventurer_1";
+    const newPlayer = defaultPlayer();
+    store = { activeProfile: name, profiles: { [name]: newPlayer } };
+    localStorage.setItem(PROFILES_KEY, JSON.stringify(store));
+  }
+
+  PROFILES = store;
+  ACTIVE = store.activeProfile;
+  player = store.profiles[ACTIVE]; // ✅ Directly use stored data, not hydrate()
+
+  // Safety: fill in missing keys (never overwrite quests)
+  const base = defaultPlayer();
+  for (const key in base) {
+    if (!(key in player)) player[key] = base[key];
+  }
+  // ensure nested objects exist
+  player.meta = Object.assign({}, base.meta, player.meta || {});
+  player.shop = Object.assign({}, base.shop, player.shop || {});
+  player.settings = Object.assign({}, base.settings, player.settings || {});
+  player.world = Object.assign({}, base.world, player.world || {});
+  player.upgrades = Object.assign({}, base.upgrades, player.upgrades || {});
+  if (!Array.isArray(player.quests)) player.quests = base.quests.slice();
+
+  // ✅ Quests keep their "done" state exactly as saved
+  // Daily rollover only resets them when day changes
+  if (!player.meta.lastDate) {
+    player.meta.lastDate = todayStr();
+    player.meta.lastRolloverAt = timeLabel();
+    addJournalLine("The road ahead calls…");
+    startNewDay();
+  } else if (player.meta.lastDate !== todayStr()) {
+    performRollover();
+  }
+
+  // Save + render
+  saveActiveProfile();
   populateProfileSelect();
-  if(!player.meta.lastDate){ player.meta.lastDate=todayStr(); player.meta.lastRolloverAt=timeLabel(); addJournalLine("The horizon blazes with promise."); startNewDay(); saveActiveProfile(); }
-  else if(needsRollover()){ performRollover(); }
   renderAll();
-  (async()=>{ try{ musicEl.play().catch(()=>{});}catch(e){} })();
+  updateUI();
+
+  try { musicEl.play().catch(() => {}); } catch {}
+  console.log("✅ Boot complete. Active:", ACTIVE);
 })();
-</script>
-</body>
-</html>
-```
+
+
 
