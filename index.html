@@ -752,9 +752,8 @@ function updateUI(){
   document.getElementById("ascendBtn").style.display = (player.level>=MAX_LEVEL ? "inline-block" : "none");
   showEventBanner(); drawAvatar(); drawWorldMap(); applyRealmTheme(); renderJournal();
 }
-
 /* ===== boot ===== */
-(function boot() {
+document.addEventListener("DOMContentLoaded", () => {
   console.log("⚙️ Booting LevelUp Quest...");
 
   // 1️⃣ Load saved store
@@ -793,9 +792,10 @@ function updateUI(){
     performRollover();
   }
 
-  // 4️⃣ Render UI
+  // 4️⃣ Render UI once everything is ready
   populateProfileSelect();
   renderAll();
+  updateUI();
 
   // 5️⃣ Optional music
   (async () => {
@@ -803,14 +803,9 @@ function updateUI(){
   })();
 
   console.log("✅ Boot complete. Active player:", ACTIVE);
-})();
+});
 
 
-
-</script>
-</body>
-</html>
-```
 
 
 
