@@ -255,18 +255,33 @@ function defaultPlayer(){
     settings:{soundMuted:true}
   };
 }
-function hydrate(base, data){
-  const p=Object.assign({}, base, data||{});
-  p.meta=Object.assign({}, base.meta, p.meta||{});
-  p.shop=Object.assign({}, base.shop, p.shop||{});
-  p.settings=Object.assign({}, base.settings, p.settings||{});
-  p.world=Object.assign({}, base.world, p.world||{});
-  p.upgrades=Object.assign({}, base.upgrades, p.upgrades||{});
-  if(!Array.isArray(p.quests)) p.quests=base.quests.slice();
-  if(!Array.isArray(p.dailyLog)) p.dailyLog=[];
-  if(!p.legacy) p.legacy={xpBonus:0,gpBonus:0};
-  if(typeof p.ascensions!=="number") p.ascensions=0;
-  if(typeof p.worldStage!=="number") p.worldStage=p.ascensions;
+function hydrate(base, data) {
+  const p = Object.assign({}, base, data || {});
+
+  // Merge nested objects
+  p.meta = Object.assign({}, base.meta, p.meta || {});
+  p.shop = Object.assign({}, base.shop, p.shop || {});
+  p.settings = Object.assign({}, base.settings, p.settings || {});
+  p.world = Object.assign({}, base.world, p.world || {});
+  p.upgrades = Object.assign({}, base.upgrades, p.upgrades || {});
+
+  // ✅ Preserve existing quests (with their done:true/false state)
+  if (Array.isArray(data?.quests) && data.quests.length > 0) {
+    p.quests = data.quests.map(q => ({
+      name: q.name,
+      xp: q.xp ?? DEFAULT_HABIT_XP,
+      gp: q.gp ?? DEFAULT_HABIT_GP,
+      done: !!q.done // keep completion state
+    }));
+  } else {
+    p.quests = base.quests.slice(); // fallback defaults
+  }
+
+  if (!Array.isArray(p.dailyLog)) p.dailyLog = [];
+  if (!p.legacy) p.legacy = { xpBonus: 0, gpBonus: 0 };
+  if (typeof p.ascensions !== "number") p.ascensions = 0;
+  if (typeof p.worldStage !== "number") p.worldStage = p.ascensions;
+
   return p;
 }
 function getProfilesStore(){
@@ -743,3 +758,4 @@ function renderAll(){ renderQuests(); renderShop(); renderUpgrades(); updateUI()
 </body>
 </html>
 ```
+
