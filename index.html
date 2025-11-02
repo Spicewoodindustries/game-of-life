@@ -126,326 +126,244 @@ ul.compact li{margin:2px 0}
 </div>
 
 <script>
+
 /* ---------- Core setup ---------- */
-const STORAGE_KEY="levelupQuest_v30";const baseXpNeeded=100;
-function todayStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function timeLabel(d=new Date()){return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
+const STORAGE_KEY = "levelupQuest_v30";
+const baseXpNeeded = 100;
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function timeLabel(d = new Date()) {
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 
 /* Sound (muted by default) */
-let audioCtx=null;let soundMuted=true;
-function ensureAudioCtx(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)()}
-function beep(f=880,d=0.10,t="square",g=0.05){if(soundMuted)return;ensureAudioCtx();const o=audioCtx.createOscillator(),ga=audioCtx.createGain();o.type=t;o.frequency.value=f;ga.gain.value=g;o.connect(ga);ga.connect(audioCtx.destination);o.start();setTimeout(()=>o.stop(),d*1000)}
-function levelUpSound(){beep(523.25,0.08,"square",0.06);setTimeout(()=>beep(659.25,0.08,"square",0.06),90);setTimeout(()=>beep(783.99,0.12,"square",0.06),180)}
+let audioCtx = null;
+let soundMuted = true;
+function ensureAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+function beep(f = 880, d = 0.1, t = "square", g = 0.05) {
+  if (soundMuted) return;
+  ensureAudioCtx();
+  const o = audioCtx.createOscillator(),
+    ga = audioCtx.createGain();
+  o.type = t;
+  o.frequency.value = f;
+  ga.gain.value = g;
+  o.connect(ga);
+  ga.connect(audioCtx.destination);
+  o.start();
+  setTimeout(() => o.stop(), d * 1000);
+}
+function levelUpSound() {
+  beep(523.25, 0.08, "square", 0.06);
+  setTimeout(() => beep(659.25, 0.08, "square", 0.06), 90);
+  setTimeout(() => beep(783.99, 0.12, "square", 0.06), 180);
+}
 
-/* State */
-let player={
-  level:1,xp:0,gold:0,
-  quests:[
-    {name:"Morning Routine",xp:10,gp:5,done:false},
-    {name:"Workout",xp:20,gp:10,done:false},
-    {name:"Read 20 mins",xp:15,gp:7,done:false},
-    {name:"Healthy Meal",xp:10,gp:5,done:false},
-    {name:"Reflect/Journaling",xp:20,gp:10,done:false}
+/* Default player template */
+let player = {
+  level: 1,
+  xp: 0,
+  gold: 0,
+  quests: [
+    { name: "Morning Routine", xp: 10, gp: 5, done: false },
+    { name: "Workout", xp: 20, gp: 10, done: false },
+    { name: "Read 20 mins", xp: 15, gp: 7, done: false },
+    { name: "Healthy Meal", xp: 10, gp: 5, done: false },
+    { name: "Reflect/Journaling", xp: 20, gp: 10, done: false },
   ],
-  meta:{
-    lastDate:null,lastRolloverAt:null,
-    streak:0,longestStreak:0,
-    totalXpEarned:0,totalGpEarned:0,totalQuestsCompleted:0,rewardsBought:0,
-    todayXp:0,todayGp:0
+  meta: {
+    lastDate: null,
+    lastRolloverAt: null,
+    streak: 0,
+    longestStreak: 0,
+    totalXpEarned: 0,
+    totalGpEarned: 0,
+    totalQuestsCompleted: 0,
+    rewardsBought: 0,
+    todayXp: 0,
+    todayGp: 0,
   },
-  shop:{items:[
-    {id:"snack",label:"Small Treat",cost:30},
-    {id:"movie",label:"Movie Night",cost:60},
-    {id:"dayoff",label:"Day Off",cost:120}
-  ],purchases:[]},
-  dailyLog:[],
-  settings:{soundMuted:true}
+  shop: {
+    items: [
+      { id: "snack", label: "Small Treat", cost: 30 },
+      { id: "movie", label: "Movie Night", cost: 60 },
+      { id: "dayoff", label: "Day Off", cost: 120 },
+    ],
+    purchases: [],
+  },
+  dailyLog: [],
+  settings: { soundMuted: true },
 };
 
 /* Persistence */
-function saveGame(){localStorage.setItem(STORAGE_KEY,JSON.stringify(player))}
-function loadGame(){const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;try{const p=JSON.parse(raw);player=Object.assign({},player,p);
-  player.meta=Object.assign({},player.meta,p.meta||{});
-  player.shop=Object.assign({},player.shop,p.shop||{});
-  player.settings=Object.assign({},player.settings,p.settings||{});
-  if(p.quests)player.quests=p.quests;
-  if(Array.isArray(p.dailyLog))player.dailyLog=p.dailyLog;
-}catch(e){console.warn("Save corrupted; defaults used.",e)}}
+function saveGame() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(player));
+}
+function loadGame() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  try {
+    const p = JSON.parse(raw);
+    player = Object.assign({}, player, p);
+    player.meta = Object.assign({}, player.meta, p.meta || {});
+    player.shop = Object.assign({}, player.shop, p.shop || {});
+    player.settings = Object.assign({}, player.settings, p.settings || {});
+    if (p.quests) player.quests = p.quests;
+    if (Array.isArray(p.dailyLog)) player.dailyLog = p.dailyLog;
+  } catch (e) {
+    console.warn("Save corrupted; defaults used.", e);
+  }
+}
 
 /* Math & UI helpers */
-function xpNeededFor(l){return baseXpNeeded*Math.pow(1.2,l-1)}
-function setMsg(el,txt,err=false){el.textContent=txt||"";el.classList.toggle("err",!!err)}
-function flashButton(btn){if(!btn)return;btn.classList.remove("flash-once");void btn.offsetWidth;btn.classList.add("flash-once")}
-function showLevelUpBanner(){const el=document.getElementById("levelUpBanner");el.classList.remove("lvl-show");void el.offsetWidth;el.classList.add("lvl-show");levelUpSound();sparkAvatar();setTimeout(()=>el.classList.remove("lvl-show"),1200)}
+function xpNeededFor(l) {
+  return baseXpNeeded * Math.pow(1.2, l - 1);
+}
+function setMsg(el, txt, err = false) {
+  el.textContent = txt || "";
+  el.classList.toggle("err", !!err);
+}
+function flashButton(btn) {
+  if (!btn) return;
+  btn.classList.remove("flash-once");
+  void btn.offsetWidth;
+  btn.classList.add("flash-once");
+}
+function showLevelUpBanner() {
+  const el = document.getElementById("levelUpBanner");
+  el.classList.remove("lvl-show");
+  void el.offsetWidth;
+  el.classList.add("lvl-show");
+  levelUpSound();
+  sparkAvatar();
+  setTimeout(() => el.classList.remove("lvl-show"), 1200);
+}
 
-/* Avatar render */
-const avatarCanvas=document.getElementById("avatar"), actx=avatarCanvas.getContext("2d");
-function drawAvatar(){
-  const lvl=Math.max(1,Math.min(5,player.level));
-  const img=new Image(); img.src=`assets/avatar_${lvl}.png`;
-  img.onload=()=>{actx.clearRect(0,0,64,64);actx.drawImage(img,0,0,64,64)};
-  img.onerror=()=>{ // placeholder
-    actx.clearRect(0,0,64,64);
-    actx.fillStyle="#002b99";actx.fillRect(0,0,64,64);
-    actx.fillStyle="#55ffff";actx.fillRect(12,16,40,40);
-    actx.fillStyle="#001a66";actx.fillRect(20,24,24,24);
+/* Avatar rendering */
+const avatarCanvas = document.getElementById("avatar"),
+  actx = avatarCanvas.getContext("2d");
+function drawAvatar() {
+  const lvl = Math.max(1, Math.min(5, player.level));
+  const img = new Image();
+  img.src = `assets/avatar_${lvl}.png`;
+  img.onload = () => {
+    actx.clearRect(0, 0, 64, 64);
+    actx.drawImage(img, 0, 0, 64, 64);
+  };
+  img.onerror = () => {
+    actx.clearRect(0, 0, 64, 64);
+    actx.fillStyle = "#002b99";
+    actx.fillRect(0, 0, 64, 64);
+    actx.fillStyle = "#55ffff";
+    actx.fillRect(12, 16, 40, 40);
+    actx.fillStyle = "#001a66";
+    actx.fillRect(20, 24, 24, 24);
   };
 }
-/* Avatar particles on level-up */
-function sparkAvatar(){
-  const N=24, parts=[];
-  for(let i=0;i<N;i++){
-    parts.push({x:32,y:32,r:1+Math.random()*2,dx:(Math.random()*2-1)*2,dy:(Math.random()*2-1)*2,life:20+Math.random()*15});
+
+/* Spark effect */
+function sparkAvatar() {
+  const N = 24,
+    parts = [];
+  for (let i = 0; i < N; i++) {
+    parts.push({
+      x: 32,
+      y: 32,
+      r: 1 + Math.random() * 2,
+      dx: (Math.random() * 2 - 1) * 2,
+      dy: (Math.random() * 2 - 1) * 2,
+      life: 20 + Math.random() * 15,
+    });
   }
-  let t=0;
-  const raf=()=>{t++;actx.save();actx.globalCompositeOperation="lighter";
-    parts.forEach(p=>{p.x+=p.dx;p.y+=p.dy;p.dy+=0.05;p.life--;
-      actx.fillStyle=`rgba(255,255,85,${Math.max(0,p.life/30)})`;
-      actx.beginPath();actx.arc(p.x,p.y,p.r,0,Math.PI*2);actx.fill();
+  let t = 0;
+  const raf = () => {
+    t++;
+    actx.save();
+    actx.globalCompositeOperation = "lighter";
+    parts.forEach((p) => {
+      p.x += p.dx;
+      p.y += p.dy;
+      p.dy += 0.05;
+      p.life--;
+      actx.fillStyle = `rgba(255,255,85,${Math.max(0, p.life / 30)})`;
+      actx.beginPath();
+      actx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      actx.fill();
     });
     actx.restore();
-    if(t<28) requestAnimationFrame(raf);
+    if (t < 28) requestAnimationFrame(raf);
     else drawAvatar();
   };
   requestAnimationFrame(raf);
 }
 
-/* Rollover & daily log */
-function needsRollover(){return player.meta.lastDate && player.meta.lastDate!==todayStr()}
-function writeDailyLog(){
-  // capture completed quests’ names and totals before reset
-  const completed=player.quests.filter(q=>q.done).map(q=>q.name);
-  const entry={date:player.meta.lastDate||todayStr(),completed:completed,xp:player.meta.todayXp||0,gp:player.meta.todayGp||0};
-  if(completed.length||entry.xp||entry.gp){player.dailyLog.push(entry)}
-  player.meta.todayXp=0;player.meta.todayGp=0;
+/* Rollover + daily log */
+function needsRollover() {
+  return player.meta.lastDate && player.meta.lastDate !== todayStr();
 }
-function performRollover(){
+function writeDailyLog() {
+  const completed = player.quests.filter((q) => q.done).map((q) => q.name);
+  const entry = {
+    date: player.meta.lastDate || todayStr(),
+    completed,
+    xp: player.meta.todayXp || 0,
+    gp: player.meta.todayGp || 0,
+  };
+  if (completed.length || entry.xp || entry.gp) player.dailyLog.push(entry);
+  player.meta.todayXp = 0;
+  player.meta.todayGp = 0;
+}
+function performRollover() {
   writeDailyLog();
-  const allDone=player.quests.every(q=>q.done);
-  player.meta.streak=allDone?player.meta.streak+1:0;
-  if(player.meta.streak>player.meta.longestStreak)player.meta.longestStreak=player.meta.streak;
-  player.quests.forEach(q=>q.done=false);
-  document.getElementById("doneToday").innerHTML="";
-  player.meta.lastDate=todayStr();player.meta.lastRolloverAt=timeLabel();
+  const allDone = player.quests.every((q) => q.done);
+  player.meta.streak = allDone ? player.meta.streak + 1 : 0;
+  if (player.meta.streak > player.meta.longestStreak)
+    player.meta.longestStreak = player.meta.streak;
+  player.quests.forEach((q) => (q.done = false));
+  document.getElementById("doneToday").innerHTML = "";
+  player.meta.lastDate = todayStr();
+  player.meta.lastRolloverAt = timeLabel();
   saveGame();
 }
-function ensureDailyRolloverOnLoad(){
-  if(!player.meta.lastDate){player.meta.lastDate=todayStr();player.meta.lastRolloverAt=timeLabel();saveGame();return}
-  if(needsRollover()){performRollover()}
+function ensureDailyRolloverOnLoad() {
+  if (!player.meta.lastDate) {
+    player.meta.lastDate = todayStr();
+    player.meta.lastRolloverAt = timeLabel();
+    saveGame();
+    return;
+  }
+  if (needsRollover()) performRollover();
 }
-setInterval(()=>{if(needsRollover()){performRollover();updateUI();renderAll()}},60000);
+setInterval(() => {
+  if (needsRollover()) {
+    performRollover();
+    updateUI();
+    renderAll();
+  }
+}, 60000);
 
-/* Rendering */
-function renderQuests(){
-  const active=document.getElementById("tasks");active.innerHTML="";
-  const doneDiv=document.getElementById("doneToday");
-  player.quests.forEach((q,i)=>{
-    if(q.done){ // already completed → show in completed section
-      const row=document.createElement("div");
-      row.className="task row";
-      row.innerHTML=`<span>✔ ${q.name} (+${q.xp} XP / +${q.gp} GP)</span>
-        <button data-undo="${i}">Undo</button>
-        <button data-edit="${i}">✏️ Edit</button>`;
-      doneDiv.appendChild(row);
-      return;
-    }
-    const row=document.createElement("div"); row.className="task row";
-    row.innerHTML=`
-      <label style="flex:1;">${q.name} (+${q.xp} XP / +${q.gp} GP)</label>
-      <button data-comp="${i}">Complete</button>
-      <button data-edit="${i}">✏️ Edit</button>
-    `;
-    active.appendChild(row);
-  });
-
-  // complete / undo
-  active.querySelectorAll('button[data-comp]').forEach(b=>b.addEventListener("click",(e)=>{
-    const i=+e.currentTarget.dataset.comp; completeQuest(i,e.currentTarget);
-  }));
-  doneDiv.querySelectorAll('button[data-undo]').forEach(b=>b.addEventListener("click",(e)=>{
-    const i=+e.currentTarget.dataset.undo; undoQuest(i);
-  }));
-
-  // edit buttons (both sections)
-  document.querySelectorAll('button[data-edit]').forEach(b=>b.addEventListener("click",(e)=>{
-    const i=+e.currentTarget.dataset.edit; openQuestEditor(i);
-  }));
-}
-
-function openQuestEditor(i){
-  const q=player.quests[i];
-  // find current container (active or done)
-  let container=[...document.querySelectorAll('#tasks .task, #doneToday .task')].find(div=>{
-    return div.querySelector(`button[data-edit="${i}"]`)
-  });
-  if(!container) return;
-  container.classList.add("editing");
-  container.innerHTML=`
-    <div class="inline-controls">
-      <input id="qName_${i}" type="text" value="${q.name}">
-      <input id="qXp_${i}" type="number" min="1" step="1" value="${q.xp}" style="width:90px">
-      <input id="qGp_${i}" type="number" min="0" step="1" value="${q.gp}" style="width:90px">
-      <button data-saveq="${i}">Save</button>
-      <button data-cancelq="${i}">Cancel</button>
-      <button data-delq="${i}" title="Delete">❌</button>
-    </div>`;
-  container.querySelector(`[data-saveq="${i}"]`).addEventListener("click",()=>{
-    const name=document.getElementById(`qName_${i}`).value.trim();
-    const xp=parseInt(document.getElementById(`qXp_${i}`).value,10)||q.xp;
-    const gp=parseInt(document.getElementById(`qGp_${i}`).value,10); 
-    if(!name) return;
-    player.quests[i].name=name; player.quests[i].xp=Math.max(1,xp); player.quests[i].gp=Math.max(0,isNaN(gp)?q.gp:gp);
-    saveGame(); renderAll();
-  });
-  container.querySelector(`[data-cancelq="${i}"]`).addEventListener("click",renderAll);
-  container.querySelector(`[data-delq="${i}"]`).addEventListener("click",()=>{
-    player.quests.splice(i,1); saveGame(); renderAll();
-  });
-}
-
-function renderShop(){
-  const list=document.getElementById("shopList"); list.innerHTML="";
-  player.shop.items.forEach(it=>{
-    const row=document.createElement("div"); row.className="row";
-    row.innerHTML=`
-      <span style="flex:1;">• ${it.label} — <span class="small">Cost: ${it.cost} GP</span></span>
-      <button data-editr="${it.id}">✏️ Edit</button>
-      <button data-buy="${it.id}">Buy</button>
-    `;
-    list.appendChild(row);
-  });
-  list.querySelectorAll('button[data-buy]').forEach(b=>b.addEventListener("click",(e)=>{
-    const it=player.shop.items.find(x=>x.id===e.currentTarget.dataset.buy);
-    flashButton(e.currentTarget); buyItem(it);
-  }));
-  list.querySelectorAll('button[data-editr]').forEach(b=>b.addEventListener("click",(e)=>{
-    const id=e.currentTarget.dataset.editr; openRewardEditor(id);
-  }));
-
-  const log=document.getElementById("purchaseLog"); log.innerHTML="";
-  player.shop.purchases.slice().reverse().forEach(p=>{
-    const li=document.createElement("li"); li.textContent=`${p.time} — ${p.label} (-${p.cost} GP)`; log.appendChild(li);
-  });
-}
-
-function openRewardEditor(id){
-  const list=document.getElementById("shopList");
-  const idx=player.shop.items.findIndex(x=>x.id===id); if(idx<0) return;
-  const it=player.shop.items[idx];
-  const row=[...list.children][idx]; row.classList.add("editing");
-  row.innerHTML=`
-    <div class="inline-controls">
-      <input id="rName_${idx}" type="text" value="${it.label}">
-      <input id="rCost_${idx}" type="number" min="1" step="1" value="${it.cost}" style="width:120px">
-      <button data-saver="${idx}">Save</button>
-      <button data-cancelr="${idx}">Cancel</button>
-      <button data-delr="${idx}" title="Delete">❌</button>
-    </div>`;
-  row.querySelector(`[data-saver="${idx}"]`).addEventListener("click",()=>{
-    const name=document.getElementById(`rName_${idx}`).value.trim();
-    let cost=parseInt(document.getElementById(`rCost_${idx}`).value,10);
-    if(!name) return; if(!cost||cost<1) cost=1;
-    player.shop.items[idx].label=name; player.shop.items[idx].cost=cost;
-    saveGame(); renderShop(); updateUI();
-  });
-  row.querySelector(`[data-cancelr="${idx}"]`).addEventListener("click",()=>{ renderShop(); });
-  row.querySelector(`[data-delr="${idx}"]`).addEventListener("click",()=>{
-    player.shop.items.splice(idx,1); saveGame(); renderShop(); updateUI();
-  });
-}
-
-/* UI totals */
-function updateUI(){
-  const need=xpNeededFor(player.level);
-  document.getElementById("level").textContent=player.level;
-  document.getElementById("xp").textContent=Math.floor(player.xp);
-  document.getElementById("xpNeeded").textContent=Math.floor(need);
-  document.getElementById("gold").textContent=player.gold;
-  document.getElementById("xpBar").style.width=Math.min(100,(player.xp/need)*100)+"%";
-  document.getElementById("streak").textContent=player.meta.streak||0;
-  document.getElementById("longestStreak").textContent=player.meta.longestStreak||0;
-  document.getElementById("todayLabel").textContent=todayStr();
-  document.getElementById("lastRollover").textContent=player.meta.lastRolloverAt||"—";
-  document.getElementById("statTotalXp").textContent=player.meta.totalXpEarned||0;
-  document.getElementById("statTotalGp").textContent=player.meta.totalGpEarned||0;
-  document.getElementById("statTotalQuests").textContent=player.meta.totalQuestsCompleted||0;
-  document.getElementById("statRewardsBought").textContent=player.meta.rewardsBought||0;
-  soundMuted=!!player.settings.soundMuted;
-  document.getElementById("soundState").textContent=soundMuted?"Muted":"On";
-  drawAvatar();
-}
-
-/* Actions */
-function completeQuest(i,btn){
-  const q=player.quests[i]; if(q.done) return;
-  q.done=true;
-  const node=btn.closest(".task"); if(node){node.classList.add("fade-out"); setTimeout(()=>renderAll(),280);}
-  gainXP(q.xp); gainGold(q.gp);
-  player.meta.todayXp+=q.xp; player.meta.todayGp+=q.gp;
-  player.meta.totalQuestsCompleted=(player.meta.totalQuestsCompleted||0)+1;
-  beep(880,0.06,"square",0.04);
-  setMsg(document.getElementById("questMsg"),`Completed "${q.name}" +${q.xp} XP / +${q.gp} GP`);
-  saveGame();
-}
-function undoQuest(i){
-  const q=player.quests[i]; if(!q.done) return;
-  q.done=false;
-  loseXP(q.xp); loseGold(q.gp);
-  player.meta.todayXp=Math.max(0,player.meta.todayXp-q.xp);
-  player.meta.todayGp=Math.max(0,player.meta.todayGp-q.gp);
-  setMsg(document.getElementById("questMsg"),`Undid "${q.name}".`);
-  saveGame(); renderAll();
-}
-
-function gainXP(a){
-  player.xp+=a; player.meta.totalXpEarned=(player.meta.totalXpEarned||0)+a;
-  let leveled=false;
-  while(player.xp>=xpNeededFor(player.level)){ player.xp-=xpNeededFor(player.level); player.level++; leveled=true; }
-  if(leveled) showLevelUpBanner();
+/* --- Rendering + Boot Delay --- */
+function renderAll() {
+  document.getElementById("doneToday").innerHTML = "";
+  renderQuests();
+  renderShop();
   updateUI();
 }
-function loseXP(a){ player.xp=Math.max(0,player.xp-a); updateUI(); }
-function gainGold(g){ player.gold+=g; player.meta.totalGpEarned=(player.meta.totalGpEarned||0)+g; updateUI(); }
-function loseGold(g){ player.gold=Math.max(0,player.gold-g); updateUI(); }
 
-function addQuest(){
-  const name=document.getElementById("newQuestName").value.trim();
-  let xp=parseInt(document.getElementById("newQuestXp").value,10); let gp=parseInt(document.getElementById("newQuestGp").value,10);
-  if(!name){setMsg(document.getElementById("questMsg"),"Enter a quest name.",true);return}
-  if(!xp||xp<1) xp=10; if(gp<0||isNaN(gp)) gp=5;
-  player.quests.push({name,xp,gp,done:false});
-  document.getElementById("newQuestName").value=""; document.getElementById("newQuestXp").value=""; document.getElementById("newQuestGp").value="";
-  saveGame(); renderAll(); setMsg(document.getElementById("questMsg"),`Added quest: ${name}`);
-}
-function buyItem(item){
-  const msg=document.getElementById("shopMsg");
-  if(player.gold<item.cost){setMsg(msg,`Not enough GP (need ${item.cost}, have ${player.gold}).`,true);beep(200,0.12,"square",0.04);return}
-  player.gold-=item.cost; player.meta.rewardsBought=(player.meta.rewardsBought||0)+1;
-  player.shop.purchases.push({time:new Date().toLocaleString(),label:item.label,cost:item.cost});
-  saveGame(); renderShop(); updateUI();
-  setMsg(msg,`Purchased: ${item.label} (−${item.cost} GP).`); beep(660,0.06,"square",0.04); setTimeout(()=>beep(990,0.08,"square",0.04),70);
-}
-function addReward(){
-  const name=document.getElementById("newRewardName").value.trim(); let cost=parseInt(document.getElementById("newRewardCost").value,10);
-  if(!name){setMsg(document.getElementById("shopMsg"),"Enter a reward name.",true);return}
-  if(!cost||cost<1) cost=30;
-  const id=slug(name); player.shop.items.push({id,label:name,cost});
-  document.getElementById("newRewardName").value=""; document.getElementById("newRewardCost").value="";
-  saveGame(); renderShop(); updateUI(); setMsg(document.getElementById("shopMsg"),`Added reward: ${name}`);
-}
-function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')}
+document.addEventListener("DOMContentLoaded", () => {
+  setTimeout(() => {
+    console.log("⚙️ Safe Booting v3.0...");
+    loadGame();
+    ensureDailyRolloverOnLoad();
+    soundMuted = !!player.settings.soundMuted;
+    renderAll();
+    console.log("✅ Safe Boot complete.");
+  }, 120);
+});
 
-/* Controls */
-document.getElementById("addQuestBtn").addEventListener("click",addQuest);
-document.getElementById("addRewardBtn").addEventListener("click",addReward);
-document.getElementById("resetBtn").addEventListener("click",()=>{performRollover();updateUI();renderAll()});
-document.getElementById("forceRolloverBtn").addEventListener("click",()=>{player.meta.lastDate=(player.meta.lastDate||todayStr())+"_FORCE";performRollover();updateUI();renderAll()});
-document.getElementById("toggleSoundBtn").addEventListener("click",()=>{ensureAudioCtx();player.settings.soundMuted=!player.settings.soundMuted;soundMuted=player.settings.soundMuted;saveGame();updateUI();if(!soundMuted)beep(880,0.06,"square",0.04)});
 
-/* Render glue */
-function renderAll(){ document.getElementById("doneToday").innerHTML=""; renderQuests(); renderShop(); updateUI(); }
-loadGame(); soundMuted=!!player.settings.soundMuted; ensureDailyRolloverOnLoad(); renderAll();
-</script>
-</body>
-</html>
-```
