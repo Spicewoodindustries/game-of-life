@@ -3,13 +3,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>LevelUp Quest — v3.5 (Ascension & Rebirth Loop)</title>
+<title>Game of Life – v3.1 (FX + Battles • EGA)</title>
 <style>
-:root{--bg:#001a66;--panel:#0b2a7a;--fg:#55ffff;--accent:#ffff55;--warn:#ff5555}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:"Courier New",monospace;transition:background .8s ease}
+:root{
+  --bg:#001a66; --panel:#0b2a7a; --fg:#55ffff; --accent:#ffff55; --mag:#ff55ff; --warn:#ff5555;
+}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:"Courier New",monospace}
 .wrap{max-width:1060px;margin:0 auto;padding:20px}
 h1,h2{margin:0 0 10px;text-shadow:0 0 6px var(--fg)}
-a{color:var(--accent)} a:hover{text-decoration:underline}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
 .card{border:1px solid var(--fg);background:linear-gradient(180deg,var(--panel),#062063);padding:12px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -18,9 +20,9 @@ a{color:var(--accent)} a:hover{text-decoration:underline}
 .small{font-size:.92em}
 button{background:#061a55;color:var(--fg);border:1px solid var(--fg);padding:6px 10px;margin:4px 6px 0 0;cursor:pointer}
 button:hover{background:var(--fg);color:#001b55}
-input,select{background:#001043;border:1px solid var(--fg);color:var(--fg);padding:4px 6px}
+input[type="text"],input[type="number"]{background:#001043;border:1px solid var(--fg);color:var(--fg);padding:4px 6px;min-width:0}
 .progress{background:#001043;border:1px solid var(--fg);height:16px;width:100%;margin:6px 0 0}
-.progress-inner{background:var(--accent);height:100%;width:0%;transition:width .4s ease, background .6s ease}
+.progress-inner{background:var(--accent);height:100%;width:0%;transition:width .4s ease}
 .meta{opacity:.9}
 .err{color:var(--warn)}
 .task{margin:6px 0}
@@ -31,103 +33,40 @@ input,select{background:#001043;border:1px solid var(--fg);color:var(--fg);paddi
 .lvl-show{display:block;animation:flash .9s ease-out}
 @keyframes flash{0%{box-shadow:0 0 0px var(--accent)}50%{box-shadow:0 0 18px var(--accent)}100%{box-shadow:0 0 0px var(--accent)}}
 .flash-once{animation:btnflash .28s ease-out}
-@keyframes btnflash{0%{box-shadow:0 0 0px #ff55ff}50%{box-shadow:0 0 14px #ff55ff}100%{box-shadow:0 0 0px #ff55ff}}
+@keyframes btnflash{0%{box-shadow:0 0 0px var(--mag)}50%{box-shadow:0 0 14px var(--mag)}100%{box-shadow:0 0 0px var(--mag)}}
 .avatar-wrap{display:flex;gap:12px;align-items:center}
 canvas#avatar{background:#000c2e;border:1px solid var(--fg)}
+/* FX overlay canvas */
 .fx-wrap{position:relative}
 #fxCanvas{position:absolute;left:0;top:0;pointer-events:none}
-/* Map */
-#worldArea{margin-bottom:8px}
-#worldmap{background:#000c2e;border:1px solid var(--fg);display:block}
-.legend{display:flex;gap:10px;margin-top:6px}
-.legend i{width:14px;height:14px;display:inline-block;border:1px solid var(--fg)}
-/* Battle + Event */
+/* Battle log */
 #battleLog{min-height:28px;margin-top:6px;padding:6px;border:1px dashed var(--fg);background:#001043}
-#eventBanner{margin:6px 0 0;padding:6px;border:1px solid var(--accent);background:#16204f}
-/* Journal */
-#journal{max-height:120px;overflow:auto;border:1px dashed var(--fg);padding:6px;background:#001043}
-.jline{margin:2px 0}
-/* Tabs */
-.tabs{display:flex;gap:6px;margin:6px 0}
-.tab-btn{padding:6px 10px;border:1px solid var(--fg);background:#061a55;cursor:pointer}
-.tab-btn.active{background:var(--fg);color:#001b55}
-.tab-pane{display:none}
-.tab-pane.active{display:block}
-/* Modal */
-#modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.7);z-index:20}
-.modal-card{width:min(520px,90vw);border:1px solid var(--fg);background:linear-gradient(180deg,#0b2a7a,#001a66);padding:14px}
-.modal-card h3{margin:0 0 8px}
-.modal-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
-/* Ascension cinematic overlay */
-#cine{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(255,255,255,0);z-index:30;color:#001a66}
-#cineText{font-size:20px;text-align:center;white-space:pre-line;text-shadow:0 0 10px #ffd24a}
-#ascendBtn{display:none;margin-left:8px}
-#legacyCard p{margin:4px 0}
 </style>
 </head>
 <body>
-<!-- Background music (autoplay muted) -->
-<audio id="bgMusic" src="https://cdn.pixabay.com/download/audio/2023/06/15/audio_63c83caa02.mp3?filename=8bit-adventure-146.mp3" loop muted></audio>
-
-<!-- Profile modal -->
-<div id="modal">
-  <div class="modal-card">
-    <h3 id="modalTitle">Profile</h3>
-    <div id="modalBody"></div>
-    <div class="modal-row">
-      <button id="modalOk">OK</button>
-      <button id="modalCancel">Cancel</button>
-    </div>
-  </div>
-</div>
-
-<!-- Ascension cinematic -->
-<div id="cine"><div id="cineText"></div></div>
-
 <div class="wrap">
   <div class="row">
-    <h1>LEVELUP QUEST — v3.5</h1>
-    <div class="right row">
-      <span>Profile:</span>
-      <select id="profileSelect"></select>
-      <button id="btnNewProfile">New</button>
-      <button id="btnRenameProfile">Rename</button>
-      <button id="btnDeleteProfile">Delete</button>
-      <span class="pill">🔕 Sound: <span id="soundState">Muted</span></span>
-      <button id="toggleSoundBtn">Toggle Sound</button>
-      <a class="pill" href="daily_log.html">📘 Daily Log</a>
-    </div>
+    <h1>LEVELUP QUEST — v3.1</h1>
+    <a class="pill right" href="daily_log.html">📘 Daily Log</a>
+    <span class="pill">🔕 Sound: <span id="soundState">Muted</span></span>
+    <button id="toggleSoundBtn">Toggle Sound</button>
   </div>
 
-  <div id="eventBanner" class="small">—</div>
-
   <div class="grid">
-    <!-- Player / World -->
+    <!-- Player / Avatar (+ FX canvas layered on top) -->
     <div class="card" id="statsCard">
-      <h2>World & Player</h2>
-
-      <div id="worldArea">
-        <canvas id="worldmap" width="260" height="120"></canvas>
-        <div class="legend small">
-          <span><i style="background:#113caa"></i>Undiscovered</span>
-          <span><i style="background:#29a8a8"></i>Explored</span>
-          <span><i style="background:#ffd24a"></i>Current</span>
-        </div>
-      </div>
-
+      <h2>Player</h2>
       <div class="fx-wrap">
         <div class="avatar-wrap">
-          <canvas id="avatar" width="64" height="64"></canvas>
+          <canvas id="avatar" width="64" height="64" title="Your avatar evolves each level"></canvas>
           <div style="flex:1">
-            <p>
-              Level <span id="level">1</span> | XP <span id="xp">0</span>/<span id="xpNeeded">300</span> | GP 💰 <span id="gold">0</span>
-              <button id="ascendBtn">Ascend ✨</button>
-            </p>
+            <p>Level <span id="level">1</span> | XP <span id="xp">0</span>/<span id="xpNeeded">100</span> | GP 💰 <span id="gold">0</span></p>
             <div class="progress"><div id="xpBar" class="progress-inner"></div></div>
-            <div id="levelUpBanner" class="levelup-banner">⚔️ LEVEL UP! Onward! ⚔️</div>
-            <div id="battleLog" class="small">The road ahead calls…</div>
+            <div id="levelUpBanner" class="levelup-banner">✨ LEVEL UP! ✨</div>
+            <div id="battleLog" class="small">Ready up, adventurer.</div>
           </div>
         </div>
+        <!-- full-card overlay for confetti/particle FX -->
         <canvas id="fxCanvas" width="650" height="120"></canvas>
       </div>
 
@@ -137,8 +76,8 @@ canvas#avatar{background:#000c2e;border:1px solid var(--fg)}
       <p class="meta">📅 Today: <span id="todayLabel">—</span></p>
       <p class="meta">🕛 Last Rollover: <span id="lastRollover">—</span></p>
       <div class="row">
-        <button id="forceRolloverBtn">Force New Day</button>
-        <button id="resetBtn">Reset for New Day</button>
+        <button id="forceRolloverBtn" title="Simulate new day">Force New Day</button>
+        <button id="resetBtn" title="Manual reset">Reset for New Day</button>
       </div>
 
       <h2 class="section-title">Player Stats</h2>
@@ -146,9 +85,6 @@ canvas#avatar{background:#000c2e;border:1px solid var(--fg)}
       <p>Total GP Earned: <strong><span id="statTotalGp">0</span></strong></p>
       <p>Total Quests Completed: <strong><span id="statTotalQuests">0</span></strong></p>
       <p>Rewards Purchased: <strong><span id="statRewardsBought">0</span></strong></p>
-
-      <h2 class="section-title">Dave’s Journal</h2>
-      <div id="journal" class="small"></div>
     </div>
 
     <!-- Quests -->
@@ -157,266 +93,188 @@ canvas#avatar{background:#000c2e;border:1px solid var(--fg)}
       <div id="tasks"></div>
       <div class="row small" style="margin-top:8px">
         <input id="newQuestName" type="text" placeholder="Quest name">
+        <input id="newQuestXp" type="number" placeholder="XP" min="1" step="1" style="width:90px">
         <input id="newQuestGp" type="number" placeholder="GP" min="0" step="1" style="width:90px">
         <button id="addQuestBtn">Add Goal</button>
       </div>
-      <p class="meta">XP is fixed by the game. Choose goals; earn consistency.</p>
+      <p class="meta">Tip: complete <em>all</em> active quests before rollover to extend your streak.</p>
       <div id="questMsg" class="meta"></div>
 
       <h2 class="section-title">Completed Today</h2>
       <div id="doneToday"></div>
     </div>
 
-    <!-- Store -->
+    <!-- Shop -->
     <div class="card">
-      <h2>Store</h2>
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="rewardsTab">Rewards</button>
-        <button class="tab-btn" data-tab="upgradesTab">Upgrades</button>
+      <h2>Reward Shop</h2>
+      <div id="shopList"></div>
+      <div class="row small" style="margin-top:8px">
+        <input id="newRewardName" type="text" placeholder="Reward name">
+        <input id="newRewardCost" type="number" placeholder="Cost (GP)" min="1" step="1" style="width:120px">
+        <button id="addRewardBtn">Add Reward</button>
       </div>
-      <div id="rewardsTab" class="tab-pane active">
-        <div id="shopList"></div>
-        <div class="row small" style="margin-top:8px">
-          <input id="newRewardName" type="text" placeholder="Reward name">
-          <input id="newRewardCost" type="number" placeholder="Cost (GP)" min="1" step="1" style="width:120px">
-          <button id="addRewardBtn">Add Reward</button>
-        </div>
-        <div id="shopMsg" class="meta"></div>
-        <h3 class="section-title">Purchases</h3>
-        <ul id="purchaseLog" class="compact"></ul>
-      </div>
-      <div id="upgradesTab" class="tab-pane">
-        <div id="upgradeList"></div>
-        <div id="upgradeMsg" class="meta"></div>
-      </div>
-    </div>
-
-    <!-- Legacy Board -->
-    <div class="card" id="legacyCard">
-      <h2>Legacy Board</h2>
-      <p>Ascensions: <strong><span id="ascensions">0</span></strong></p>
-      <p>Permanent XP Bonus: <strong><span id="legacyXpBonus">0%</span></strong></p>
-      <p>Permanent GP Bonus: <strong><span id="legacyGpBonus">0%</span></strong></p>
-      <p>Current Realm: <strong><span id="realmName">Cobalt Caves</span></strong></p>
+      <div id="shopMsg" class="meta"></div>
+      <h3 class="section-title">Purchases</h3>
+      <ul id="purchaseLog" class="compact"></ul>
     </div>
   </div>
 </div>
 
 <script>
-/* ===== constants & helpers ===== */
-const LEGACY_KEY="levelupQuest_v30";
-const PROFILES_KEY="levelupQuest_profiles";
-const MAX_LEVEL=10;
-const baseXpNeeded=300; // pacing
-const DEFAULT_HABIT_XP=12, DEFAULT_HABIT_GP=6;
-const REALMS=["Cobalt Caves","Golden Frontier","Crystal Peaks","Aether Gates","Timeless Realm","Beyond the Veil"];
-
-function xpNeededFor(l){return (l>=MAX_LEVEL? Infinity : baseXpNeeded*Math.pow(1.35,l-1))}
+/* ===== Keep save key so your v3.0 progress loads ===== */
+const STORAGE_KEY="levelupQuest_v30";const baseXpNeeded=100;
 function todayStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function timeLabel(d=new Date()){return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
-function isoWeek(d=new Date()){d=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=d.getUTCDay()||7;d.setUTCDate(d.getUTCDate()+4-n);const y0=new Date(Date.UTC(d.getUTCFullYear(),0,1));return `${d.getUTCFullYear()}-W${String(Math.ceil((((d-y0)/86400000)+1)/7)).padStart(2,'0')}`}
 
-/* ===== audio ===== */
-let audioCtx=null, soundMuted=true; let musicMedia=null, musicGain=null, musicFilter=null;
-const musicEl=document.getElementById('bgMusic');
-function ensureAudioCtx(){if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)()}
-function connectMusic(){
-  ensureAudioCtx(); if(musicMedia) return;
-  musicMedia = audioCtx.createMediaElementSource(musicEl);
-  musicGain  = audioCtx.createGain(); musicGain.gain.value=0.6;
-  musicFilter= audioCtx.createBiquadFilter(); musicFilter.type='lowpass'; musicFilter.frequency.value=12000;
-  musicMedia.connect(musicFilter); musicFilter.connect(musicGain); musicGain.connect(audioCtx.destination);
-}
-function transitionMusic(zone){ if(!musicGain||!musicFilter) return; const now=audioCtx.currentTime, d=1.2;
-  if(zone===0){ musicFilter.frequency.linearRampToValueAtTime(12000, now+d); musicGain.gain.linearRampToValueAtTime(0.6, now+d);}
-  else if(zone===1){ musicFilter.frequency.linearRampToValueAtTime(4500, now+d); musicGain.gain.linearRampToValueAtTime(0.7, now+d);}
-  else { musicFilter.frequency.linearRampToValueAtTime(6500-(zone*600), now+d); musicGain.gain.linearRampToValueAtTime(0.72, now+d); }
-}
-function beep(f=880,d=0.10,t="square",g=0.05){ if(soundMuted) return; ensureAudioCtx(); const o=audioCtx.createOscillator(),ga=audioCtx.createGain(); o.type=t;o.frequency.value=f;ga.gain.value=g;o.connect(ga);ga.connect(audioCtx.destination);o.start();setTimeout(()=>o.stop(),d*1000)}
+/* Sound */
+let audioCtx=null;let soundMuted=true;
+function ensureAudioCtx(){if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)()}
+function beep(f=880,d=0.10,t="square",g=0.05){if(soundMuted)return;ensureAudioCtx();const o=audioCtx.createOscillator(),ga=audioCtx.createGain();o.type=t;o.frequency.value=f;ga.gain.value=g;o.connect(ga);ga.connect(audioCtx.destination);o.start();setTimeout(()=>o.stop(),d*1000)}
 function levelUpSound(){beep(523.25,0.08,"square",0.06);setTimeout(()=>beep(659.25,0.08,"square",0.06),90);setTimeout(()=>beep(783.99,0.12,"square",0.06),180)}
 
-/* ===== base state & profiles ===== */
-function defaultPlayer(){
-  return {
-    level:1,xp:0,gold:0,ascended:false,
-    ascensions:0, legacy:{xpBonus:0, gpBonus:0}, worldStage:0,
-    quests:[
-      {name:"Morning Routine",xp:10,gp:5,done:false},
-      {name:"Workout",xp:20,gp:10,done:false},
-      {name:"Read 20 mins",xp:15,gp:7,done:false},
-      {name:"Healthy Meal",xp:10,gp:5,done:false},
-      {name:"Reflect/Journaling",xp:20,gp:10,done:false}
-    ],
-    meta:{lastDate:null,lastRolloverAt:null,streak:0,longestStreak:0,totalXpEarned:0,totalGpEarned:0,totalQuestsCompleted:0,rewardsBought:0,todayXp:0,todayGp:0,todayEvent:null},
-    shop:{items:[{id:"snack",label:"Small Treat",cost:30},{id:"movie",label:"Movie Night",cost:60},{id:"dayoff",label:"Day Off",cost:120}],purchases:[]},
-    dailyLog:[],
-    world:{discovered:1,entries:[]},
-    upgrades:{xpBoost:0, gpBoost:0, streakShield:false, focusBeacon:false, streakShieldUsedWeek:null},
-    settings:{soundMuted:true}
-  };
-}
-function hydrate(base, data) {
-  const p = Object.assign({}, base, data || {});
+/* State */
+let player={
+  level:1,xp:0,gold:0,
+  quests:[
+    {name:"Morning Routine",xp:10,gp:5,done:false},
+    {name:"Workout",xp:20,gp:10,done:false},
+    {name:"Read 20 mins",xp:15,gp:7,done:false},
+    {name:"Healthy Meal",xp:10,gp:5,done:false},
+    {name:"Reflect/Journaling",xp:20,gp:10,done:false}
+  ],
+  meta:{lastDate:null,lastRolloverAt:null,streak:0,longestStreak:0,totalXpEarned:0,totalGpEarned:0,totalQuestsCompleted:0,rewardsBought:0,todayXp:0,todayGp:0},
+  shop:{items:[{id:"snack",label:"Small Treat",cost:30},{id:"movie",label:"Movie Night",cost:60},{id:"dayoff",label:"Day Off",cost:120}],purchases:[]},
+  dailyLog:[],
+  settings:{soundMuted:true}
+};
 
-  // Merge nested objects
-  p.meta = Object.assign({}, base.meta, p.meta || {});
-  p.shop = Object.assign({}, base.shop, p.shop || {});
-  p.settings = Object.assign({}, base.settings, p.settings || {});
-  p.world = Object.assign({}, base.world, p.world || {});
-  p.upgrades = Object.assign({}, base.upgrades, p.upgrades || {});
+/* Persistence */
+function saveGame(){localStorage.setItem(STORAGE_KEY,JSON.stringify(player))}
+function loadGame(){const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return;try{const p=JSON.parse(raw);player=Object.assign({},player,p);player.meta=Object.assign({},player.meta,p.meta||{});player.shop=Object.assign({},player.shop,p.shop||{});player.settings=Object.assign({},player.settings,p.settings||{});if(p.quests)player.quests=p.quests;if(Array.isArray(p.dailyLog))player.dailyLog=p.dailyLog;}catch(e){console.warn("Save corrupted; defaults used.",e)}}
 
-  // ✅ Preserve existing quests (with their done:true/false state)
-  if (Array.isArray(data?.quests) && data.quests.length > 0) {
-    p.quests = data.quests.map(q => ({
-      name: q.name,
-      xp: q.xp ?? DEFAULT_HABIT_XP,
-      gp: q.gp ?? DEFAULT_HABIT_GP,
-      done: !!q.done // keep completion state
-    }));
-  } else {
-    p.quests = base.quests.slice(); // fallback defaults
-  }
-
-  if (!Array.isArray(p.dailyLog)) p.dailyLog = [];
-  if (!p.legacy) p.legacy = { xpBonus: 0, gpBonus: 0 };
-  if (typeof p.ascensions !== "number") p.ascensions = 0;
-  if (typeof p.worldStage !== "number") p.worldStage = p.ascensions;
-
-  return p;
-}
-function getProfilesStore(){
-  const raw=localStorage.getItem(PROFILES_KEY);
-  if(!raw){
-    const legacy=localStorage.getItem(LEGACY_KEY);
-    const store={activeProfile:null,profiles:{}};
-    if(legacy){ store.profiles["Adventurer_1"]=hydrate(defaultPlayer(), JSON.parse(legacy)); store.activeProfile="Adventurer_1"; }
-    localStorage.setItem(PROFILES_KEY, JSON.stringify(store)); return store;
-  }
-  try{ return JSON.parse(raw);}catch{ return {activeProfile:null,profiles:{}}}
-}
-function setProfilesStore(s){ localStorage.setItem(PROFILES_KEY, JSON.stringify(s)); }
-
-let PROFILES=getProfilesStore();
-let ACTIVE=PROFILES.activeProfile && PROFILES.profiles[PROFILES.activeProfile] ? PROFILES.activeProfile : null;
-let player = ACTIVE ? hydrate(defaultPlayer(), PROFILES.profiles[ACTIVE]) : defaultPlayer();
-
-/* ===== modal helpers ===== */
-const modal=document.getElementById('modal'), modalTitle=document.getElementById('modalTitle'), modalBody=document.getElementById('modalBody');
-const modalOk=document.getElementById('modalOk'), modalCancel=document.getElementById('modalCancel');
-let modalOkHandler=()=>{};
-function openModal(title, bodyHTML, onOk){ modalTitle.textContent=title; modalBody.innerHTML=bodyHTML; modal.style.display="flex"; modalOkHandler=onOk||(()=>{}); }
-modalOk.onclick=()=>{ modal.style.display="none"; modalOkHandler(); };
-modalCancel.onclick=()=>{ modal.style.display="none"; };
-
-/* ===== UI helpers ===== */
+/* Math/UI helpers */
+function xpNeededFor(l){return baseXpNeeded*Math.pow(1.2,l-1)}
 function setMsg(el,txt,err=false){el.textContent=txt||"";el.classList.toggle("err",!!err)}
 function flashButton(btn){if(!btn)return;btn.classList.remove("flash-once");void btn.offsetWidth;btn.classList.add("flash-once")}
+function showLevelUpBanner(){const el=document.getElementById("levelUpBanner");el.classList.remove("lvl-show");void el.offsetWidth;el.classList.add("lvl-show");levelUpSound();sparkAvatar();setTimeout(()=>el.classList.remove("lvl-show"),1200)}
 
-/* ===== avatar & fx ===== */
+/* Avatar render */
 const avatarCanvas=document.getElementById("avatar"), actx=avatarCanvas.getContext("2d");
 function drawAvatar(){
   const lvl=Math.max(1,Math.min(5,player.level)); const img=new Image(); img.src=`assets/avatar_${lvl}.png`;
   img.onload=()=>{actx.clearRect(0,0,64,64);actx.drawImage(img,0,0,64,64)};
-  img.onerror=()=>{actx.clearRect(0,0,64,64);actx.fillStyle="#002b99";actx.fillRect(0,0,64,64);actx.fillStyle="#55ffff";actx.fillRect(12,16,40,40);actx.fillStyle="#001a66";actx.fillRect(20,24,24,24)};
+  img.onerror=()=>{actx.clearRect(0,0,64,64);actx.fillStyle="#002b99";actx.fillRect(0,0,64,64);actx.fillStyle="#55ffff";actx.fillRect(12,16,40,40);actx.fillStyle="#001a66";actx.fillRect(20,24,24,24);};
 }
-function showLevelUpBanner(){const el=document.getElementById("levelUpBanner");el.classList.remove("lvl-show");void el.offsetWidth;el.classList.add("lvl-show");levelUpSound();sparkAvatar();setTimeout(()=>el.classList.remove("lvl-show"),1200)}
-function sparkAvatar(){const N=24,parts=[];for(let i=0;i<N;i++){parts.push({x:32,y:32,r:1+Math.random()*2,dx:(Math.random()*2-1)*2,dy:(Math.random()*2-1)*2,life:20+Math.random()*15})}
-  let t=0;const raf=()=>{t++;actx.save();actx.globalCompositeOperation="lighter";
-    parts.forEach(p=>{p.x+=p.dx;p.y+=p.dy;p.dy+=0.05;p.life--;actx.fillStyle=`rgba(255,255,85,${Math.max(0,p.life/30)})`;actx.beginPath();actx.arc(p.x,p.y,p.r,0,Math.PI*2);actx.fill()});
-    actx.restore(); if(t<28)requestAnimationFrame(raf); else drawAvatar();
+/* Avatar particles on level-up */
+function sparkAvatar(){
+  const N=24, parts=[]; for(let i=0;i<N;i++){parts.push({x:32,y:32,r:1+Math.random()*2,dx:(Math.random()*2-1)*2,dy:(Math.random()*2-1)*2,life:20+Math.random()*15})}
+  let t=0; const raf=()=>{t++;actx.save();actx.globalCompositeOperation="lighter";
+    parts.forEach(p=>{p.x+=p.dx;p.y+=p.dy;p.dy+=0.05;p.life--; actx.fillStyle=`rgba(255,255,85,${Math.max(0,p.life/30)})`; actx.beginPath();actx.arc(p.x,p.y,p.r,0,Math.PI*2);actx.fill();});
+    actx.restore(); if(t<28) requestAnimationFrame(raf); else drawAvatar();
   }; requestAnimationFrame(raf);
 }
+
+/* ===== NEW: FX Canvas & Battle Flavor ===== */
 const fxCanvas=document.getElementById("fxCanvas"), fctx=fxCanvas.getContext("2d");
-function burstFX(x=140,y=35,color="rgba(255,255,85,0.95)"){
-  const P=40,pts=[];for(let i=0;i<P;i++){pts.push({x,y,dx:(Math.random()*2-1)*3,dy:(Math.random()*2-1)*2-1,life:18+Math.random()*14,clr:color,r:1+Math.random()*2})}
-  let frames=0;(function loop(){frames++;fctx.clearRect(0,0,fxCanvas.width,fxCanvas.height);
-    pts.forEach(p=>{p.x+=p.dx;p.y+=p.dy;p.dy+=0.06;p.life--;fctx.fillStyle=p.clr;fctx.beginPath();fctx.arc(p.x,p.y,p.r,0,Math.PI*2);fctx.fill()});
-    if(frames<28)requestAnimationFrame(loop); else fctx.clearRect(0,0,fxCanvas.width,fxCanvas.height);
-  })();
-}
-
-/* ===== map + realm theme ===== */
-const mapCanvas=document.getElementById("worldmap"), mctx=mapCanvas.getContext("2d");
-const TILE_W=48,TILE_H=48,PAD_X=8,PAD_Y=8;
-function drawWorldMap(){
-  mctx.clearRect(0,0,mapCanvas.width,mapCanvas.height);
-  for(let r=0;r<2;r++){for(let c=0;c<5;c++){
-    const idx=r*5+c, x=PAD_X+c*(TILE_W+PAD_X), y=PAD_Y+r*(TILE_H+PAD_Y), current=(idx===player.level-1);
-    const col=current ? "#ffd24a" : (idx < (player.level-1) ? "#29a8a8" : "#113caa");
-    mctx.fillStyle=col; mctx.fillRect(x,y,TILE_W,TILE_H);
-    mctx.strokeStyle="#55ffff"; mctx.strokeRect(x,y,TILE_W,TILE_H);
-    mctx.fillStyle="#001a66"; mctx.fillRect(x+4,y+4,TILE_W-8,TILE_H-8);
-    mctx.fillStyle="#55ffff"; mctx.font="12px Courier New"; mctx.fillText("L"+(idx+1), x+TILE_W/2-10, y+TILE_H/2+4);
-  }}
-}
-function realmTheme(stage){
-  switch(true){
-    case stage>=5: return {bg:"#e8eef7",xp:"#ffffff"};
-    case stage===4: return {bg:"#d7d7d7",xp:"#fff5bf"};
-    case stage===3: return {bg:"#cdeaf5",xp:"#cfffff"};
-    case stage===2: return {bg:"#b9b1ff",xp:"#e6e0ff"};
-    case stage===1: return {bg:"#2a1b00",xp:"#ffcc55"};
-    default: return {bg:"#001a66",xp:"#55ffff"};
+function burstFX(x=120,y=40,color="rgba(255,255,85,0.9)"){
+  const P=40, pts=[];
+  for(let i=0;i<P;i++){pts.push({x,y,dx:(Math.random()*2-1)*3,dy:(Math.random()*2-1)*2-1,life:18+Math.random()*14,clr:color,r:1+Math.random()*2});}
+  let frames=0;
+  function loop(){
+    frames++; fctx.clearRect(0,0,fxCanvas.width,fxCanvas.height);
+    pts.forEach(p=>{p.x+=p.dx; p.y+=p.dy; p.dy+=0.06; p.life--; fctx.fillStyle=p.clr; fctx.beginPath(); fctx.arc(p.x,p.y,p.r,0,Math.PI*2); fctx.fill();});
+    if(frames<28) requestAnimationFrame(loop); else fctx.clearRect(0,0,fxCanvas.width,fxCanvas.height);
   }
-}
-function applyRealmTheme(){
-  const t=realmTheme(player.worldStage||0);
-  document.body.style.background=t.bg;
-  document.getElementById("xpBar").style.background=t.xp;
-  if(audioCtx) transitionMusic(player.worldStage||0);
+  loop();
 }
 
-/* ===== journal & events ===== */
-const JOURNAL_LINES=["You press on. The path widens.","Steel in your step, starlight in your eyes.","You notch another mark on the stone.","Your lantern glows brighter than before.","Quiet resolve cuts through the dark."];
-function addJournalLine(txt){ player.world.entries.push({time:new Date().toLocaleString(),text:txt}); }
-function renderJournal(){ const box=document.getElementById("journal"); box.innerHTML=""; player.world.entries.slice(-8).reverse().forEach(e=>{const div=document.createElement("div");div.className="jline";div.textContent=`${e.text} (${e.time})`;box.appendChild(div);}); }
-
-const DAILY_EVENTS=[
-  {id:"focus",label:"☀️ Focus Surge",xpMul:1.10,gpMul:1.00,streakXpMul:1.00,desc:"Your mind hums with clarity (+10% XP)."},
-  {id:"fog",label:"🌫️ Fog of Fatigue",xpMul:0.90,gpMul:1.00,streakXpMul:1.00,desc:"The caves feel heavy (−10% XP)."},
-  {id:"lucky",label:"💰 Lucky Streak",xpMul:1.00,gpMul:1.20,streakXpMul:1.00,desc:"Treasure glints everywhere (+20% GP)."},
-  {id:"quiet",label:"🌀 Quiet Mind",xpMul:1.00,gpMul:1.00,streakXpMul:1.15,desc:"A calm rhythm steadies your progress (+15% streak XP)."},
-  {id:"neutral",label:"🌈 Neutral Day",xpMul:1.00,gpMul:1.00,streakXpMul:1.00,desc:"Balance restored — steady as you go."}
+const ENEMIES=[
+  {name:"Noise Goblin", line:"silenced by your focus!"},
+  {name:"Distraction Imp", line:"banished to the sidelines!"},
+  {name:"Laziness Ooze", line:"evaporated under pressure!"},
+  {name:"Procrastination Wraith", line:"faded at dawn!"},
+  {name:"Doomscroll Drake", line:"grounded for the day!"}
 ];
-function chooseEvent(){ return DAILY_EVENTS[Math.floor(Math.random()*DAILY_EVENTS.length)] }
-function showEventBanner(){ const b=document.getElementById("eventBanner"); const ev=player.meta.todayEvent; b.textContent = ev? `${ev.label}: ${ev.desc}` : "—"; }
 
-/* ===== upgrades (permanent within run; cleared on ascension) ===== */
-const UPGRADE_DEFS=[
-  {id:"xp1",label:"XP Booster I",cost:150,apply(p){p.upgrades.xpBoost=Math.max(p.upgrades.xpBoost,0.05)} ,desc:"+5% XP gain"},
-  {id:"xp2",label:"XP Booster II",cost:300,apply(p){p.upgrades.xpBoost=Math.max(p.upgrades.xpBoost,0.10)},desc:"+10% XP gain (stacks with I)"},
-  {id:"gold",label:"Golden Touch",cost:250,apply(p){p.upgrades.gpBoost=Math.max(p.upgrades.gpBoost,0.10)},desc:"+10% GP gain"},
-  {id:"shield",label:"Streak Shield",cost:400,apply(p){p.upgrades.streakShield=true},desc:"Forgive one missed day per week"},
-  {id:"beacon",label:"Focus Beacon",cost:600,apply(p){p.upgrades.focusBeacon=true},desc:"+25% streak XP bonus"}
-];
-function ownsUpgrade(up){
-  switch(up.id){
-    case "xp1": return player.upgrades.xpBoost>=0.05;
-    case "xp2": return player.upgrades.xpBoost>=0.10;
-    case "gold": return player.upgrades.gpBoost>=0.10;
-    case "shield": return !!player.upgrades.streakShield;
-    case "beacon": return !!player.upgrades.focusBeacon;
-  } return false;
-}
-function renderUpgrades(){
-  const box=document.getElementById("upgradeList"); box.innerHTML="";
-  UPGRADE_DEFS.forEach(up=>{
-    const owned=ownsUpgrade(up);
-    const row=document.createElement("div"); row.className="row small";
-    row.innerHTML=`<span style="flex:1;">• ${up.label} — <span class="small">${up.desc}</span></span>${owned?`<span class="pill">ACTIVE</span>`:`<button data-up="${up.id}">Buy (${up.cost} GP)</button>`}`;
-    box.appendChild(row);
-  });
-  box.querySelectorAll('button[data-up]').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      const up=UPGRADE_DEFS.find(u=>u.id===btn.dataset.up);
-      if(player.gold<up.cost){ setMsg(document.getElementById("upgradeMsg"),"Not enough GP.",true); beep(200,0.12,"square",0.04); return; }
-      player.gold-=up.cost; up.apply(player); saveActiveProfile(); updateUI(); renderUpgrades();
-      setMsg(document.getElementById("upgradeMsg"),`${up.label} activated!`); beep(660,0.06,"square",0.04); setTimeout(()=>beep(990,0.08,"square",0.04),70);
-    });
-  });
+function battleMessage(questName,xp,gp){
+  const e=ENEMIES[Math.floor(Math.random()*ENEMIES.length)];
+  const line=`You defeated the ${e.name} — ${e.line} (+${xp} XP / +${gp} GP)`;
+  const log=document.getElementById("battleLog");
+  log.textContent=line;
 }
 
-/* ===== shop & quests ===== */
+/* Rollover & daily log */
+function needsRollover(){return player.meta.lastDate && player.meta.lastDate!==todayStr()}
+function writeDailyLog(){
+  const completed=player.quests.filter(q=>q.done).map(q=>q.name);
+  const entry={date:player.meta.lastDate||todayStr(),completed,xp:player.meta.todayXp||0,gp:player.meta.todayGp||0};
+  if(completed.length||entry.xp||entry.gp){player.dailyLog.push(entry)}
+  player.meta.todayXp=0; player.meta.todayGp=0;
+}
+function performRollover(){
+  writeDailyLog();
+  const allDone=player.quests.every(q=>q.done);
+  player.meta.streak=allDone?player.meta.streak+1:0;
+  if(player.meta.streak>player.meta.longestStreak)player.meta.longestStreak=player.meta.streak;
+  player.quests.forEach(q=>q.done=false);
+  document.getElementById("doneToday").innerHTML="";
+  player.meta.lastDate=todayStr(); player.meta.lastRolloverAt=timeLabel();
+  saveGame();
+}
+function ensureDailyRolloverOnLoad(){
+  if(!player.meta.lastDate){player.meta.lastDate=todayStr();player.meta.lastRolloverAt=timeLabel();saveGame();return}
+  if(needsRollover()){performRollover()}
+}
+setInterval(()=>{if(needsRollover()){performRollover();updateUI();renderAll()}},60000);
+
+/* Rendering */
+function renderQuests(){
+  const active=document.getElementById("tasks"); active.innerHTML="";
+  const doneDiv=document.getElementById("doneToday"); doneDiv.innerHTML="";
+  player.quests.forEach((q,i)=>{
+    if(q.done){
+      const row=document.createElement("div"); row.className="task row";
+      row.innerHTML=`<span>✔ ${q.name} (+${q.xp} XP / +${q.gp} GP)</span>
+        <button data-undo="${i}">Undo</button>
+        <button data-edit="${i}">✏️ Edit</button>`;
+      doneDiv.appendChild(row); return;
+    }
+    const row=document.createElement("div"); row.className="task row";
+    row.innerHTML=`<label style="flex:1;">${q.name} (+${q.xp} XP / +${q.gp} GP)</label>
+      <button data-comp="${i}">Complete</button>
+      <button data-edit="${i}">✏️ Edit</button>`;
+    active.appendChild(row);
+  });
+  active.querySelectorAll('button[data-comp]').forEach(b=>b.addEventListener("click",(e)=>{completeQuest(+e.currentTarget.dataset.comp,e.currentTarget)}));
+  doneDiv.querySelectorAll('button[data-undo]').forEach(b=>b.addEventListener("click",(e)=>{undoQuest(+e.currentTarget.dataset.undo)}));
+  document.querySelectorAll('button[data-edit]').forEach(b=>b.addEventListener("click",(e)=>openQuestEditor(+e.currentTarget.dataset.edit)));
+}
+
+function openQuestEditor(i){
+  const q=player.quests[i];
+  let container=[...document.querySelectorAll('#tasks .task, #doneToday .task')].find(div=>div.querySelector(`button[data-edit="${i}"]`));
+  if(!container) return;
+  container.innerHTML=`
+    <div class="row small" style="flex-wrap:wrap;background:#001043;border:1px dashed var(--fg);padding:6px">
+      <input id="qName_${i}" type="text" value="${q.name}">
+      <input id="qXp_${i}" type="number" min="1" step="1" value="${q.xp}" style="width:90px">
+      <input id="qGp_${i}" type="number" min="0" step="1" value="${q.gp}" style="width:90px">
+      <button data-saveq="${i}">Save</button>
+      <button data-cancelq="${i}">Cancel</button>
+      <button data-delq="${i}" title="Delete">❌</button>
+    </div>`;
+  container.querySelector(`[data-saveq="${i}"]`).addEventListener("click",()=>{
+    const name=document.getElementById(`qName_${i}`).value.trim();
+    const xp=parseInt(document.getElementById(`qXp_${i}`).value,10)||q.xp;
+    const gp=parseInt(document.getElementById(`qGp_${i}`).value,10);
+    if(!name) return;
+    player.quests[i].name=name; player.quests[i].xp=Math.max(1,xp); player.quests[i].gp=Math.max(0,isNaN(gp)?q.gp:gp);
+    saveGame(); renderAll();
+  });
+  container.querySelector(`[data-cancelq="${i}"]`).addEventListener("click",renderAll);
+  container.querySelector(`[data-delq="${i}"]`).addEventListener("click",()=>{player.quests.splice(i,1); saveGame(); renderAll();});
+}
+
 function renderShop(){
   const list=document.getElementById("shopList"); list.innerHTML="";
   player.shop.items.forEach(it=>{
@@ -439,293 +297,21 @@ function openRewardEditor(id){
       <input id="rCost_${idx}" type="number" min="1" step="1" value="${it.cost}" style="width:120px">
       <button data-saver="${idx}">Save</button>
       <button data-cancelr="${idx}">Cancel</button>
-      <button data-delr="${idx}">❌</button>
+      <button data-delr="${idx}" title="Delete">❌</button>
     </div>`;
-  row.querySelector(`[data-saver="${idx}"]`).addEventListener("click",()=>{const name=document.getElementById(`rName_${idx}`).value.trim();let cost=parseInt(document.getElementById(`rCost_${idx}`).value,10);if(!name)return;if(!cost||cost<1)cost=1;player.shop.items[idx].label=name;player.shop.items[idx].cost=cost;saveActiveProfile();renderShop();updateUI();});
+  row.querySelector(`[data-saver="${idx}"]`).addEventListener("click",()=>{const name=document.getElementById(`rName_${idx}`).value.trim();let cost=parseInt(document.getElementById(`rCost_${idx}`).value,10);if(!name)return;if(!cost||cost<1)cost=1;player.shop.items[idx].label=name;player.shop.items[idx].cost=cost;saveGame();renderShop();updateUI();});
   row.querySelector(`[data-cancelr="${idx}"]`).addEventListener("click",renderShop);
-  row.querySelector(`[data-delr="${idx}"]`).addEventListener("click",()=>{player.shop.items.splice(idx,1);saveActiveProfile();renderShop();updateUI();});
-}
-function renderQuests(){
-  const active=document.getElementById("tasks"); active.innerHTML="";
-  const doneDiv=document.getElementById("doneToday"); doneDiv.innerHTML="";
-  player.quests.forEach((q,i)=>{
-    if(q.done){
-      const row=document.createElement("div"); row.className="task row";
-      row.innerHTML=`<span>✔ ${q.name} (+${q.xp} XP / +${q.gp} GP)</span>
-        <button data-undo="${i}">Undo</button>
-        <button data-edit="${i}">✏️ Edit</button>`;
-      doneDiv.appendChild(row); return;
-    }
-    const row=document.createElement("div"); row.className="task row";
-    row.innerHTML=`<label style="flex:1;">${q.name} (+${q.xp} XP / +${q.gp} GP)</label>
-      <button data-comp="${i}">Complete</button>
-      <button data-edit="${i}">✏️ Edit</button>`;
-    active.appendChild(row);
-  });
-  active.querySelectorAll('button[data-comp]').forEach(b=>b.addEventListener("click",(e)=>{completeQuest(+e.currentTarget.dataset.comp,e.currentTarget)}));
-  doneDiv.querySelectorAll('button[data-undo]').forEach(b=>b.addEventListener("click",(e)=>{undoQuest(+e.currentTarget.dataset.undo)}));
-  document.querySelectorAll('button[data-edit]').forEach(b=>b.addEventListener("click",(e)=>openQuestEditor(+e.currentTarget.dataset.edit)));
-}
-function openQuestEditor(i){
-  const q=player.quests[i];
-  let container=[...document.querySelectorAll('#tasks .task, #doneToday .task')].find(div=>div.querySelector(`button[data-edit="${i}"]`));
-  if(!container) return;
-  container.innerHTML=`
-    <div class="row small" style="flex-wrap:wrap;background:#001043;border:1px dashed var(--fg);padding:6px">
-      <input id="qName_${i}" type="text" value="${q.name}">
-      <input id="qGp_${i}" type="number" min="0" step="1" value="${q.gp}" style="width:90px">
-      <button data-saveq="${i}">Save</button>
-      <button data-cancelq="${i}">Cancel</button>
-      <button data-delq="${i}">❌</button>
-    </div>`;
-  container.querySelector(`[data-saveq="${i}"]`).addEventListener("click",()=>{
-    const name=document.getElementById(`qName_${i}`).value.trim();
-    const gp=parseInt(document.getElementById(`qGp_${i}`).value,10);
-    if(!name)return;
-    player.quests[i].name=name; player.quests[i].gp=Math.max(0,isNaN(gp)?q.gp:gp);
-    saveActiveProfile(); renderAll();
-  });
-  container.querySelector(`[data-cancelq="${i}"]`).addEventListener("click",renderAll);
-  container.querySelector(`[data-delq="${i}"]`).addEventListener("click",()=>{player.quests.splice(i,1); saveActiveProfile(); renderAll();});
+  row.querySelector(`[data-delr="${idx}"]`).addEventListener("click",()=>{player.shop.items.splice(idx,1);saveGame();renderShop();updateUI();});
 }
 
-/* ===== profiles UI ===== */
-const selProfile=document.getElementById("profileSelect");
-function populateProfileSelect(){
-  selProfile.innerHTML="";
-  Object.keys(PROFILES.profiles).forEach(n=>{const opt=document.createElement("option"); opt.value=n; opt.textContent=n; selProfile.appendChild(opt);});
-  if(ACTIVE) selProfile.value=ACTIVE;
-}
-function saveActiveProfile(){ if(!ACTIVE) return; PROFILES.profiles[ACTIVE]=player; setProfilesStore(PROFILES); }
-
-function ensureActiveProfile(){
-  if(ACTIVE) return true;
-  openModal("Create Profile", `<label>Profile name</label><input id="inpProfileName" type="text" value="Adventurer_1" style="width:100%">`, ()=>{
-    const name=(document.getElementById('inpProfileName').value||"Adventurer_1").trim();
-    if(!name) return; if(PROFILES.profiles[name]) return alert("Name already exists.");
-    PROFILES.profiles[name]=defaultPlayer(); PROFILES.activeProfile=name; ACTIVE=name; player=hydrate(defaultPlayer(), PROFILES.profiles[name]);
-    setProfilesStore(PROFILES); populateProfileSelect(); renderAll();
-  });
-  return false;
-}
-
-document.getElementById("btnNewProfile").onclick=()=>{
-  openModal("New Profile", `<label>Name</label><input id="inpProfileName" type="text" value="Adventurer_${Object.keys(PROFILES.profiles).length+1}" style="width:100%">`, ()=>{
-    const name=(document.getElementById('inpProfileName').value||"Adventurer").trim();
-    if(!name) return; if(PROFILES.profiles[name]) { alert("Name already exists."); return; }
-    saveActiveProfile(); PROFILES.profiles[name]=defaultPlayer(); ACTIVE=name; PROFILES.activeProfile=name; setProfilesStore(PROFILES);
-    player=hydrate(defaultPlayer(), PROFILES.profiles[name]); populateProfileSelect(); renderAll();
-  });
-};
-document.getElementById("btnRenameProfile").onclick=()=>{
-  if(!ACTIVE) return;
-  openModal("Rename Profile", `<label>New name for "${ACTIVE}"</label><input id="inpProfileName" type="text" value="${ACTIVE}" style="width:100%">`, ()=>{
-    const name=(document.getElementById('inpProfileName').value||ACTIVE).trim();
-    if(!name || name===ACTIVE) return; if(PROFILES.profiles[name]){ alert("Name already exists."); return;}
-    saveActiveProfile(); PROFILES.profiles[name]=PROFILES.profiles[ACTIVE]; delete PROFILES.profiles[ACTIVE];
-    ACTIVE=name; PROFILES.activeProfile=name; setProfilesStore(PROFILES); populateProfileSelect(); renderAll();
-  });
-};
-document.getElementById("btnDeleteProfile").onclick=()=>{
-  if(!ACTIVE) return;
-  const names=Object.keys(PROFILES.profiles);
-  if(names.length<=1){ alert("At least one profile is required."); return; }
-  openModal("Delete Profile", `<div>Delete "<b>${ACTIVE}</b>"? This cannot be undone.</div>`, ()=>{
-    delete PROFILES.profiles[ACTIVE];
-    const first=Object.keys(PROFILES.profiles)[0];
-    ACTIVE=first; PROFILES.activeProfile=first; setProfilesStore(PROFILES);
-    player=hydrate(defaultPlayer(), PROFILES.profiles[ACTIVE]); populateProfileSelect(); renderAll();
-  });
-};
-selProfile.addEventListener("change",()=>{
-  if(!selProfile.value || selProfile.value===ACTIVE) return;
-  saveActiveProfile(); ACTIVE=selProfile.value; player=hydrate(defaultPlayer(), PROFILES.profiles[ACTIVE]||defaultPlayer());
-  PROFILES.activeProfile=ACTIVE; setProfilesStore(PROFILES); renderAll();
-});
-
-/* ===== events & rollover ===== */
-function needsRollover(){return player.meta.lastDate && player.meta.lastDate!==todayStr()}
-function writeDailyLog(){
-  const completed=player.quests.filter(q=>q.done).map(q=>q.name);
-  const entry={date:player.meta.lastDate||todayStr(),completed,xp:player.meta.todayXp||0,gp:player.meta.todayGp||0,event:player.meta.todayEvent?.id||null};
-  if(completed.length||entry.xp||entry.gp){player.dailyLog.push(entry)}
-  addJournalLine(JOURNAL_LINES[Math.floor(Math.random()*JOURNAL_LINES.length)]);
-  player.meta.todayXp=0; player.meta.todayGp=0;
-}
-function startNewDay(){ player.meta.todayEvent=chooseEvent(); showEventBanner(); }
-function performRollover(){
-  writeDailyLog();
-  const allDone=player.quests.every(q=>q.done);
-  if(allDone){ player.meta.streak=(player.meta.streak||0)+1; }
-  else{
-    const week=isoWeek();
-    if(player.upgrades.streakShield && player.upgrades.streakShieldUsedWeek!==week){
-      player.upgrades.streakShieldUsedWeek=week; addJournalLine("Your Streak Shield held the line.");
-    }else{ player.meta.streak=0; }
-  }
-  if(player.meta.streak>player.meta.longestStreak)player.meta.longestStreak=player.meta.streak;
-  player.quests.forEach(q=>q.done=false); document.getElementById("doneToday").innerHTML="";
-  player.meta.lastDate=todayStr(); player.meta.lastRolloverAt=timeLabel();
-  startNewDay(); saveActiveProfile();
-}
-function ensureDailyRolloverOnLoad(){
-  if(!player.meta.lastDate){ player.meta.lastDate=todayStr(); player.meta.lastRolloverAt=timeLabel(); addJournalLine("The road rises to meet you."); startNewDay(); saveActiveProfile(); return; }
-  if(needsRollover()){ performRollover(); }
-}
-setInterval(()=>{ if(needsRollover()){ performRollover(); updateUI(); renderAll(); }}, 60000);
-
-/* ===== numbers & multipliers ===== */
-function currentMultipliers(){
-  const ev = player.meta.todayEvent || {xpMul:1,gpMul:1,streakXpMul:1};
-  const up = player.upgrades || {};
-  const legacy = player.legacy || {xpBonus:0,gpBonus:0};
-  const xpBoost = 1 + (up.xpBoost||0) + (legacy.xpBonus||0);
-  const gpBoost = 1 + (up.gpBoost||0) + (legacy.gpBonus||0);
-  return { xpMul: ev.xpMul * xpBoost, gpMul: ev.gpMul * gpBoost, streakMul: ev.streakXpMul * (up.focusBeacon?1.25:1) };
-}
-
-/* ===== actions ===== */
-function completeQuest(i,btn){
-  const q=player.quests[i]; if(q.done) return; q.done=true;
-  if(btn){const node=btn.closest(".task"); if(node){node.classList.add("fade-out"); setTimeout(()=>renderAll(),280);}}
-  const mult=currentMultipliers();
-  const xpGain=Math.round(q.xp*mult.xpMul); const gpGain=Math.round(q.gp*mult.gpMul);
-  gainXP(xpGain); gainGold(gpGain);
-  player.meta.todayXp+=xpGain; player.meta.todayGp+=gpGain;
-  player.meta.totalQuestsCompleted=(player.meta.totalQuestsCompleted||0)+1;
-  beep(880,0.06,"square",0.04); burstFX(140,35,"rgba(255,255,85,0.95)"); battleMessage(q.name,xpGain,gpGain);
-  setMsg(document.getElementById("questMsg"),`Completed "${q.name}"`); saveActiveProfile();
-}
-function undoQuest(i){
-  const q=player.quests[i]; if(!q.done) return; q.done=false;
-  if(!player.ascended) loseXP(q.xp); loseGold(q.gp);
-  player.meta.todayXp=Math.max(0,player.meta.todayXp-q.xp); player.meta.todayGp=Math.max(0,player.meta.todayGp-q.gp);
-  setMsg(document.getElementById("questMsg"),`Undid "${q.name}".`); saveActiveProfile(); renderAll();
-}
-function gainXP(a){
-  if(player.ascended){ updateUI(); return; }
-  player.xp+=a; player.meta.totalXpEarned=(player.meta.totalXpEarned||0)+a;
-  let leveled=false;
-  while(player.level<MAX_LEVEL && player.xp>=xpNeededFor(player.level)){
-    player.xp-=xpNeededFor(player.level); player.level++; leveled=true; player.world.discovered=Math.max(player.world.discovered, player.level);
-  }
-  if(player.level>=MAX_LEVEL){ // show Ascend button
-    document.getElementById("ascendBtn").style.display="inline-block";
-  }
-  if(leveled) showLevelUpBanner();
-  updateUI();
-}
-function loseXP(a){ player.xp=Math.max(0,player.xp-a); updateUI(); }
-function gainGold(g){ player.gold+=g; player.meta.totalGpEarned=(player.meta.totalGpEarned||0)+g; updateUI(); }
-function loseGold(g){ player.gold=Math.max(0,player.gold-g); updateUI(); }
-
-/* Add quest (fixed XP) */
-function addQuest(){
-  const name=document.getElementById("newQuestName").value.trim();
-  let gp=parseInt(document.getElementById("newQuestGp").value,10);
-  if(!name){setMsg(document.getElementById("questMsg"),"Enter a quest name.",true);return}
-  if(isNaN(gp)||gp<0) gp=DEFAULT_HABIT_GP;
-  player.quests.push({name, xp:DEFAULT_HABIT_XP, gp, done:false});
-  document.getElementById("newQuestName").value=""; document.getElementById("newQuestGp").value="";
-  saveActiveProfile(); renderAll(); setMsg(document.getElementById("questMsg"),`Added quest: ${name} (+${DEFAULT_HABIT_XP} XP / +${gp} GP)`);
-}
-
-/* Rewards */
-function buyItem(item){
-  const msg=document.getElementById("shopMsg");
-  if(player.gold<item.cost){ setMsg(msg,`Not enough GP. Need ${item.cost}.`,true); beep(200,0.12,"square",0.04); return; }
-  player.gold-=item.cost; player.meta.rewardsBought=(player.meta.rewardsBought||0)+1;
-  player.shop.purchases.push({time:new Date().toLocaleString(),label:item.label,cost:item.cost});
-  saveActiveProfile(); renderShop(); updateUI(); setMsg(msg,`Purchased: ${item.label}`); beep(660,0.06,"square",0.04); setTimeout(()=>beep(990,0.08,"square",0.04),70);
-}
-
-/* ===== tabs & controls ===== */
-document.querySelectorAll(".tab-btn").forEach(btn=>{
-  btn.addEventListener("click",()=>{
-    document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-    document.querySelectorAll(".tab-pane").forEach(p=>p.classList.remove("active"));
-    btn.classList.add("active"); document.getElementById(btn.dataset.tab).classList.add("active");
-  });
-});
-document.getElementById("addQuestBtn").addEventListener("click",addQuest);
-document.getElementById("addRewardBtn").addEventListener("click",addReward);
-function addReward(){
-  const name=document.getElementById("newRewardName").value.trim(); let cost=parseInt(document.getElementById("newRewardCost").value,10);
-  if(!name){setMsg(document.getElementById("shopMsg"),"Enter a reward name.",true);return}
-  if(!cost||cost<1) cost=30;
-  const id=slug(name); player.shop.items.push({id,label:name,cost});
-  document.getElementById("newRewardName").value=""; document.getElementById("newRewardCost").value="";
-  saveActiveProfile(); renderShop(); updateUI(); setMsg(document.getElementById("shopMsg"),`Added reward: ${name}`);
-}
-function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')}
-document.getElementById("resetBtn").addEventListener("click",()=>{performRollover();updateUI();renderAll()});
-document.getElementById("forceRolloverBtn").addEventListener("click",()=>{player.meta.lastDate=(player.meta.lastDate||todayStr())+"_FORCE";performRollover();updateUI();renderAll()});
-document.getElementById("toggleSoundBtn").addEventListener("click",async ()=>{
-  ensureAudioCtx(); connectMusic(); if(audioCtx.state==="suspended"){await audioCtx.resume();}
-  player.settings.soundMuted=!player.settings.soundMuted; soundMuted=player.settings.soundMuted; musicEl.muted=soundMuted; if(!soundMuted){ musicEl.play().catch(()=>{}); }
-  saveActiveProfile(); updateUI(); if(!soundMuted) beep(880,0.06,"square",0.04);
-});
-
-/* ===== ascend flow (cinematic + soft reset) ===== */
-const ascendBtn=document.getElementById("ascendBtn");
-ascendBtn.addEventListener("click",()=>confirmAscend());
-function confirmAscend(){
-  openModal("Ascend to a New Realm", `
-    <p class="small">You’ve conquered this world. Ascend to begin anew:</p>
-    <ul class="small">
-      <li>Level & XP reset</li>
-      <li><b>GP kept</b></li>
-      <li><b>Upgrades removed</b> (rebuy next run)</li>
-      <li>+5% XP & +5% GP permanent legacy bonus</li>
-      <li>World evolves to the next realm</li>
-    </ul>
-  `, playAscensionCinematic);
-}
-const cine=document.getElementById("cine"), cineText=document.getElementById("cineText");
-function setCine(txt, alpha){ cine.style.display="flex"; cine.style.background=`rgba(255,255,255,${alpha})`; cineText.textContent=txt; }
-function playAscensionCinematic(){
-  ensureAudioCtx(); connectMusic();
-  // Phase 1: Fade-in white + soften music
-  let t=0; const seq=[
-    {ms:0, fn:()=>{ setCine("",0.0); }},
-    {ms:200, fn:()=>{ setCine("The drums of adventure thunder…",0.15); musicFilter.frequency.linearRampToValueAtTime(1800,audioCtx.currentTime+1.0); }},
-    {ms:1200, fn:()=>{ setCine("Your stride is unwavering.\nYour lantern burns like dawn.",0.35); beep(392,0.10,"square",0.05);} },
-    {ms:2100, fn:()=>{ setCine("The walls tremble.\nA golden wind lifts you skyward.",0.6); beep(523.25,0.10,"square",0.05);} },
-    {ms:3000, fn:()=>{ setCine("⚡ HERO’S RISE ⚡",0.85); beep(659.25,0.12,"square",0.06);} },
-    {ms:3800, fn:()=>{ setCine("✨ YOU ASCENDED ✨",1.0); beep(783.99,0.16,"square",0.07);} },
-    {ms:4600, fn:()=>{ resetForAscension(); }},
-    {ms:5200, fn:()=>{ cine.style.display="none"; }}
-  ];
-  seq.forEach(s=>setTimeout(s.fn,s.ms));
-}
-function resetForAscension(){
-  // Increment legacy & ascensions
-  player.ascensions=(player.ascensions||0)+1;
-  player.legacy = player.legacy || {xpBonus:0,gpBonus:0};
-  player.legacy.xpBonus = (player.legacy.xpBonus||0)+0.05;
-  player.legacy.gpBonus = (player.legacy.gpBonus||0)+0.05;
-  player.worldStage = player.ascensions; // realm index
-  // Soft reset
-  player.level=1; player.xp=0; player.ascended=false;
-  // Keep GP; clear upgrades
-  player.upgrades={xpBoost:0,gpBoost:0,streakShield:false,focusBeacon:false,streakShieldUsedWeek:null};
-  // Reset streaks
-  player.meta.streak=0; player.meta.longestStreak=player.meta.longestStreak||0;
-  // Journal entry
-  addJournalLine("You ascend in triumph. A new realm unfolds.");
-  // Hide ascend button until next cap
-  ascendBtn.style.display="none";
-  saveActiveProfile(); updateUI(); renderUpgrades(); applyRealmTheme();
-}
-
-/* ===== update UI ===== */
+/* UI totals */
 function updateUI(){
   const need=xpNeededFor(player.level);
   document.getElementById("level").textContent=player.level;
   document.getElementById("xp").textContent=Math.floor(player.xp);
-  document.getElementById("xpNeeded").textContent=(need===Infinity? "—" : Math.floor(need));
+  document.getElementById("xpNeeded").textContent=Math.floor(need);
   document.getElementById("gold").textContent=player.gold;
-  document.getElementById("xpBar").style.width=((need===Infinity)?100:Math.min(100,(player.xp/need)*100))+"%";
+  document.getElementById("xpBar").style.width=Math.min(100,(player.xp/need)*100)+"%";
   document.getElementById("streak").textContent=player.meta.streak||0;
   document.getElementById("longestStreak").textContent=player.meta.longestStreak||0;
   document.getElementById("todayLabel").textContent=todayStr();
@@ -735,43 +321,53 @@ function updateUI(){
   document.getElementById("statTotalQuests").textContent=player.meta.totalQuestsCompleted||0;
   document.getElementById("statRewardsBought").textContent=player.meta.rewardsBought||0;
   soundMuted=!!player.settings.soundMuted; document.getElementById("soundState").textContent=soundMuted?"Muted":"On";
-  document.getElementById("ascensions").textContent=player.ascensions||0;
-  document.getElementById("legacyXpBonus").textContent=Math.round((player.legacy?.xpBonus||0)*100)+"%";
-  document.getElementById("legacyGpBonus").textContent=Math.round((player.legacy?.gpBonus||0)*100)+"%";
-  document.getElementById("realmName").textContent=REALMS[Math.min(REALMS.length-1, player.worldStage||0)];
-  // show ascend button if capped
-  document.getElementById("ascendBtn").style.display = (player.level>=MAX_LEVEL ? "inline-block" : "none");
-  showEventBanner(); drawAvatar(); drawWorldMap(); applyRealmTheme(); renderJournal();
+  drawAvatar();
 }
 
-/* ===== boot ===== */
-(function ensurePlayerLoaded(){
-  try {
-    const store = JSON.parse(localStorage.getItem("levelupQuest_profiles"));
-    if (store && store.activeProfile && store.profiles[store.activeProfile]) {
-      PROFILES = store;
-      ACTIVE = store.activeProfile;
-      player = store.profiles[ACTIVE];
-      console.log("✅ Loaded existing player:", ACTIVE);
-    } else {
-      console.warn("⚠️ No existing profile found, creating new default");
-      const name = "Adventurer_1";
-      player = defaultPlayer();
-      PROFILES = { activeProfile: name, profiles: { [name]: player } };
-      ACTIVE = name;
-      localStorage.setItem("levelupQuest_profiles", JSON.stringify(PROFILES));
-    }
-  } catch (e) {
-    console.error("❌ Error restoring player:", e);
-    const name = "Adventurer_1";
-    player = defaultPlayer();
-    PROFILES = { activeProfile: name, profiles: { [name]: player } };
-    ACTIVE = name;
-  }
-})();
+/* Actions (enhanced completion -> FX + battle flavor) */
+function completeQuest(i,btn){
+  const q=player.quests[i]; if(q.done) return; q.done=true;
+  const node=btn.closest(".task"); if(node){node.classList.add("fade-out"); setTimeout(()=>renderAll(),280);}
+  gainXP(q.xp); gainGold(q.gp);
+  player.meta.todayXp+=q.xp; player.meta.todayGp+=q.gp;
+  player.meta.totalQuestsCompleted=(player.meta.totalQuestsCompleted||0)+1;
+  beep(880,0.06,"square",0.04);
+  burstFX(140,35,"rgba(255,255,85,0.95)");
+  battleMessage(q.name,q.xp,q.gp);
+  setMsg(document.getElementById("questMsg"),`Completed "${q.name}"`);
+  saveGame();
+}
+function undoQuest(i){
+  const q=player.quests[i]; if(!q.done) return; q.done=false;
+  loseXP(q.xp); loseGold(q.gp);
+  player.meta.todayXp=Math.max(0,player.meta.todayXp-q.xp);
+  player.meta.todayGp=Math.max(0,player.meta.todayGp-q.gp);
+  setMsg(document.getElementById("questMsg"),`Undid "${q.name}".`); saveGame(); renderAll();
+}
+function gainXP(a){
+  player.xp+=a; player.meta.totalXpEarned=(player.meta.totalXpEarned||0)+a;
+  let leveled=false; while(player.xp>=xpNeededFor(player.level)){player.xp-=xpNeededFor(player.level); player.level++; leveled=true;}
+  if(leveled) showLevelUpBanner(); updateUI();
+}
+function loseXP(a){player.xp=Math.max(0,player.xp-a); updateUI();}
+function gainGold(g){player.gold+=g; player.meta.totalGpEarned=(player.meta.totalGpEarned||0)+g; updateUI();}
+function loseGold(g){player.gold=Math.max(0,player.gold-g); updateUI();}
+function addQuest(){const name=document.getElementById("newQuestName").value.trim();let xp=parseInt(document.getElementById("newQuestXp").value,10);let gp=parseInt(document.getElementById("newQuestGp").value,10);if(!name){setMsg(document.getElementById("questMsg"),"Enter a quest name.",true);return}if(!xp||xp<1)xp=10;if(gp<0||isNaN(gp))gp=5;player.quests.push({name,xp,gp,done:false});document.getElementById("newQuestName").value="";document.getElementById("newQuestXp").value="";document.getElementById("newQuestGp").value="";saveGame();renderAll();setMsg(document.getElementById("questMsg"),`Added quest: ${name}`)}
+function buyItem(item){const msg=document.getElementById("shopMsg");if(player.gold<item.cost){setMsg(msg,`Not enough GP (need ${item.cost}, have ${player.gold}).`,true);beep(200,0.12,"square",0.04);return}player.gold-=item.cost;player.meta.rewardsBought=(player.meta.rewardsBought||0)+1;player.shop.purchases.push({time:new Date().toLocaleString(),label:item.label,cost:item.cost});saveGame();renderShop();updateUI();setMsg(msg,`Purchased: ${item.label} (−${item.cost} GP).`);beep(660,0.06,"square",0.04);setTimeout(()=>beep(990,0.08,"square",0.04),70)}
+function addReward(){const name=document.getElementById("newRewardName").value.trim();let cost=parseInt(document.getElementById("newRewardCost").value,10);if(!name){setMsg(document.getElementById("shopMsg"),"Enter a reward name.",true);return}if(!cost||cost<1)cost=30;const id=slug(name);player.shop.items.push({id,label:name,cost});document.getElementById("newRewardName").value="";document.getElementById("newRewardCost").value="";saveGame();renderShop();updateUI();setMsg(document.getElementById("shopMsg"),`Added reward: ${name}`)}
+function slug(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')}
 
+/* Controls */
+document.getElementById("addQuestBtn").addEventListener("click",addQuest);
+document.getElementById("addRewardBtn").addEventListener("click",addReward);
+document.getElementById("resetBtn").addEventListener("click",()=>{performRollover();updateUI();renderAll()});
+document.getElementById("forceRolloverBtn").addEventListener("click",()=>{player.meta.lastDate=(player.meta.lastDate||todayStr())+"_FORCE";performRollover();updateUI();renderAll()});
+document.getElementById("toggleSoundBtn").addEventListener("click",()=>{ensureAudioCtx();player.settings.soundMuted=!player.settings.soundMuted;soundMuted=player.settings.soundMuted;saveGame();updateUI();if(!soundMuted)beep(880,0.06,"square",0.04)});
 
-
-
-
-
+/* Render glue */
+function renderAll(){ renderQuests(); renderShop(); updateUI(); }
+loadGame(); soundMuted=!!player.settings.soundMuted; ensureDailyRolloverOnLoad(); renderAll();
+</script>
+</body>
+</html>
+```
