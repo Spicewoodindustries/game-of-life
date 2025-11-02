@@ -262,7 +262,7 @@ function hydrate(base, data){
   p.settings=Object.assign({}, base.settings, p.settings||{});
   p.world=Object.assign({}, base.world, p.world||{});
   p.upgrades=Object.assign({}, base.upgrades, p.upgrades||{});
-  if(!Array.isArray(p.quests) || !p.quests.length) p.quests = base.quests.slice();
+  if(!Array.isArray(p.quests)) p.quests=base.quests.slice();
   if(!Array.isArray(p.dailyLog)) p.dailyLog=[];
   if(!p.legacy) p.legacy={xpBonus:0,gpBonus:0};
   if(typeof p.ascensions!=="number") p.ascensions=0;
@@ -284,30 +284,6 @@ function setProfilesStore(s){ localStorage.setItem(PROFILES_KEY, JSON.stringify(
 let PROFILES=getProfilesStore();
 let ACTIVE=PROFILES.activeProfile && PROFILES.profiles[PROFILES.activeProfile] ? PROFILES.activeProfile : null;
 let player = ACTIVE ? hydrate(defaultPlayer(), PROFILES.profiles[ACTIVE]) : defaultPlayer();
-  (function ensurePlayerLoaded(){
-  try {
-    const store = JSON.parse(localStorage.getItem("levelupQuest_profiles"));
-    if (store && store.activeProfile && store.profiles[store.activeProfile]) {
-      PROFILES = store;
-      ACTIVE = store.activeProfile;
-      player = store.profiles[ACTIVE];
-      console.log("✅ Loaded existing player:", ACTIVE);
-    } else {
-      console.warn("⚠️ No existing profile found, creating new default");
-      const name = "Adventurer_1";
-      player = defaultPlayer();
-      PROFILES = { activeProfile: name, profiles: { [name]: player } };
-      ACTIVE = name;
-      localStorage.setItem("levelupQuest_profiles", JSON.stringify(PROFILES));
-    }
-  } catch (e) {
-    console.error("❌ Error restoring player:", e);
-    const name = "Adventurer_1";
-    player = defaultPlayer();
-    PROFILES = { activeProfile: name, profiles: { [name]: player } };
-    ACTIVE = name;
-  }
-})();
 
 /* ===== modal helpers ===== */
 const modal=document.getElementById('modal'), modalTitle=document.getElementById('modalTitle'), modalBody=document.getElementById('modalBody');
@@ -804,10 +780,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
   console.log("✅ Boot complete. Active player:", ACTIVE);
 });
-
-
-
-
-
-
-
