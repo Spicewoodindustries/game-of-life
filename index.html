@@ -730,58 +730,64 @@ function updateUI(){
 }
 
 /* ===== boot ===== */
-(function boot(){
-  console.log("Booting LevelUp Quest...");
+(function boot() {
+  console.log("⚙️ Booting LevelUp Quest...");
 
-  // 1. Load from localStorage
-  const store = getProfilesStore();
-  console.log("Loaded store:", store);
+  // 1️⃣ Load saved store
+  let store = getProfilesStore();
+  if (!store || typeof store !== "object") {
+    console.warn("No valid store found, creating a new one.");
+    store = { activeProfile: null, profiles: {} };
+  }
 
-  // 2. Pick active profile or create one
+  // 2️⃣ Load existing or create new profile
   if (store.activeProfile && store.profiles[store.activeProfile]) {
     ACTIVE = store.activeProfile;
     player = hydrate(defaultPlayer(), store.profiles[ACTIVE]);
     console.log("Loaded existing profile:", ACTIVE);
   } else {
-    console.log("No profile found — creating Adventurer_1");
-    const newProfile = "Adventurer_1";
-    store.profiles[newProfile] = defaultPlayer();
-    store.activeProfile = newProfile;
-    ACTIVE = newProfile;
-    player = store.profiles[newProfile];
+    console.log("No active profile found — creating Adventurer_1");
+    const name = "Adventurer_1";
+    player = defaultPlayer();
+    store.activeProfile = name;
+    store.profiles[name] = player;
+    ACTIVE = name;
     setProfilesStore(store);
+    console.log("Created new profile:", name);
   }
 
-  // 3. Populate the dropdown
-  populateProfileSelect();
+  PROFILES = store; // sync global state
 
-  // 4. Daily setup
+  // 3️⃣ Daily setup
   if (!player.meta.lastDate) {
     player.meta.lastDate = todayStr();
     player.meta.lastRolloverAt = timeLabel();
-    addJournalLine("The horizon blazes with promise.");
+    addJournalLine("The road ahead calls…");
     startNewDay();
     saveActiveProfile();
   } else if (needsRollover()) {
     performRollover();
   }
 
-  // 5. Render UI
+  // 4️⃣ Render UI
+  populateProfileSelect();
   renderAll();
 
-  // 6. Music
+  // 5️⃣ Optional music
   (async () => {
     try { musicEl.play().catch(() => {}); } catch (e) {}
   })();
 
-  console.log("Boot complete — active player:", player);
+  console.log("✅ Boot complete. Active player:", ACTIVE);
 })();
+
 
 
 </script>
 </body>
 </html>
 ```
+
 
 
 
