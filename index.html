@@ -729,35 +729,27 @@ function updateUI(){
   showEventBanner(); drawAvatar(); drawWorldMap(); applyRealmTheme(); renderJournal();
 }
 /* ===== boot ===== */
-document.addEventListener("DOMContentLoaded", () => {
+(function boot() {
   console.log("⚙️ Booting LevelUp Quest...");
 
-  // 1️⃣ Load saved store
+  // Try to load saved profiles
   let store = getProfilesStore();
-  if (!store || typeof store !== "object") {
-    console.warn("No valid store found, creating a new one.");
-    store = { activeProfile: null, profiles: {} };
-  }
 
-  // 2️⃣ Load existing or create new profile
-  if (store.activeProfile && store.profiles[store.activeProfile]) {
-    ACTIVE = store.activeProfile;
-    player = hydrate(defaultPlayer(), store.profiles[ACTIVE]);
-    console.log("Loaded existing profile:", ACTIVE);
-  } else {
-    console.log("No active profile found — creating Adventurer_1");
+  // If nothing exists, create default player and profile
+  if (!store.activeProfile || !store.profiles || Object.keys(store.profiles).length === 0) {
+    console.log("No profiles found — creating Adventurer_1");
     const name = "Adventurer_1";
-    player = defaultPlayer();
-    store.activeProfile = name;
-    store.profiles[name] = player;
-    ACTIVE = name;
+    const newPlayer = defaultPlayer();
+    store = { activeProfile: name, profiles: { [name]: newPlayer } };
     setProfilesStore(store);
-    console.log("Created new profile:", name);
   }
 
-  PROFILES = store; // sync global state
+  // Load global state
+  PROFILES = store;
+  ACTIVE = store.activeProfile;
+  player = hydrate(defaultPlayer(), store.profiles[ACTIVE]);
 
-  // 3️⃣ Daily setup
+  // Daily setup (first launch or rollover)
   if (!player.meta.lastDate) {
     player.meta.lastDate = todayStr();
     player.meta.lastRolloverAt = timeLabel();
@@ -768,15 +760,16 @@ document.addEventListener("DOMContentLoaded", () => {
     performRollover();
   }
 
-  // 4️⃣ Render UI once everything is ready
+  // Render everything
   populateProfileSelect();
   renderAll();
   updateUI();
 
-  // 5️⃣ Optional music
+  // Auto-play background music (fails silently if blocked)
   (async () => {
     try { musicEl.play().catch(() => {}); } catch (e) {}
   })();
 
   console.log("✅ Boot complete. Active player:", ACTIVE);
-});
+})();
+
